@@ -1,9 +1,17 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import chessBackground from "../assets/chessBackground.svg";
 import { Box, Button, Typography } from "@mui/material";
+import { Questrial } from "next/font/google";
+
+const questrial = Questrial({
+  weight: "400",
+  subsets: ["latin"],
+});
 
 export default function Home() {
+  const router = useRouter();
   return (
     <Box
       sx={{
@@ -25,13 +33,23 @@ export default function Home() {
           alignItems: "center",
         }}
       >
-        <Typography variant="h1" fontWeight={"bold"}>
+        <Typography
+          variant="h1"
+          fontWeight={"bold"}
+          className={questrial.className}
+          sx={{
+            fontSize: { xs: "2rem", sm: "3rem", lg: "5rem", xl: "7rem" },
+            letterSpacing: "0.1em",
+            fontWeight: "700 !important",
+            transform: "scaleX(1.6) scaleY(1.2)",
+          }}
+        >
           CHESSMATE
         </Typography>
         <Typography
           variant="h6"
           align="center"
-          sx={{ mt: 2, width: "35vw", color: "#757575", lineHeight: "1.6rem" }}
+          sx={{ mt: 0, width: "35vw", color: "#757575", lineHeight: "1.6rem" }}
         >
           World’s No. #1 decentralized chess game to stake crypto to play chess
           with friends and the winner takes all.
@@ -43,12 +61,16 @@ export default function Home() {
             backgroundColor: "#FF5C00",
             mt: 4,
             px: 5,
+            py:1.5,
             fontWeight: "bold",
             transition: "transform .1s",
             ":hover": {
               backgroundColor: "#FF5C00",
               transform: "rotate(-10deg)",
             },
+          }}
+          onClick={() => {
+            router.push("/play");
           }}
         >
           PLAY ONLINE
@@ -57,6 +79,8 @@ export default function Home() {
           sx={{
             color: "#FF5C00",
             mt: 1,
+            px: 5,
+            py:1.5,
             textTransform: "none",
             transition: "transform .1s",
             ":hover": {

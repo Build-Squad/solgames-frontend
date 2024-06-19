@@ -14,11 +14,13 @@ import MenuIcon from "@mui/icons-material/Menu";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
+import { useRouter } from "next/navigation";
 
 const drawerWidth = 240;
 const navItems = ["Play", "Puzzles", "Learn", "Watch", "Community"];
 
 export default function DrawerAppBar() {
+  const router = useRouter();
   const [mobileOpen, setMobileOpen] = React.useState(false);
 
   const handleDrawerToggle = () => {
@@ -76,7 +78,14 @@ export default function DrawerAppBar() {
           <Typography
             variant="h6"
             component="div"
-            sx={{ flexGrow: 1, display: { xs: "none", sm: "block" } }}
+            sx={{
+              flexGrow: 1,
+              display: { xs: "none", sm: "block" },
+              cursor: "pointer",
+            }}
+            onClick={() => {
+              router.push("/");
+            }}
           >
             CHESSMATE
           </Typography>
