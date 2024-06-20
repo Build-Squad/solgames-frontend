@@ -1,6 +1,7 @@
 import { Box } from "@mui/material";
 import React from "react";
 import World_map from "../../assets/World_map.svg";
+import Chessboard from "@/components/chessboard/chessboard";
 
 type Props = {};
 
@@ -24,7 +25,18 @@ export default function Play({}: Props) {
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
         }}
-      ></Box>
+      >
+        <Box
+          sx={{
+            alignItems: "center",
+            height: "100%",
+            display: "flex",
+            justifyContent: "center",
+          }}
+        >
+          <Chessboard />
+        </Box>
+      </Box>
     </Box>
   );
 }
