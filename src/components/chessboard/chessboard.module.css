@@ -56,6 +56,13 @@
     border-bottom-right-radius: 16px;
 }
 
+.possibleMove {
+    width: 30%;
+    height: 30%;
+    background-color: #FF5C00;
+    border-radius: 50%;
+}
+
 
 @media (max-width: 600px) {
     .board {

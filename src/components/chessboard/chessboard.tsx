@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Box } from "@mui/material";
 import { Chess, Square as ChessSquare } from "chess.js";
 import Image from "next/image";
@@ -38,6 +38,7 @@ const Chessboard: React.FC = () => {
     Array(64).fill(null)
   );
   const [selectedSquare, setSelectedSquare] = useState<number | null>(null);
+  const [possibleMoves, setPossibleMoves] = useState<ChessSquare[]>([]);
   const [turn, setTurn] = useState<"w" | "b">("w");
 
   const updateBoard = useCallback(() => {
@@ -63,6 +64,11 @@ const Chessboard: React.FC = () => {
   const handleSquareClick = (index: number) => {
     if (selectedSquare === null) {
       setSelectedSquare(index);
+      const from = indexToSquare(index);
+      const moves = chess
+        .moves({ square: from, verbose: true })
+        .map((move) => move.to);
+      setPossibleMoves(moves);
     } else {
       const from = indexToSquare(selectedSquare);
       const to = indexToSquare(index);
@@ -72,6 +78,7 @@ const Chessboard: React.FC = () => {
         updateBoard();
       }
       setSelectedSquare(null);
+      setPossibleMoves([]);
     }
   };
 
@@ -79,6 +86,12 @@ const Chessboard: React.FC = () => {
     const file = String.fromCharCode(97 + (index % 8));
     const rank = 8 - Math.floor(index / 8);
     return `${file}${rank}` as ChessSquare;
+  };
+
+  const squareToIndex = (square: ChessSquare): number => {
+    const file = square.charCodeAt(0) - 97;
+    const rank = 8 - parseInt(square[1], 10);
+    return rank * 8 + file;
   };
 
   const getBorderRadiusClass = (index: number) => {
@@ -96,7 +109,6 @@ const Chessboard: React.FC = () => {
     }
   };
 
-
   return (
     <Box className={styles.boardContainer}>
       <Box className={styles.board}>
@@ -109,6 +121,10 @@ const Chessboard: React.FC = () => {
                 : styles.black
             } ${getBorderRadiusClass(index)}`}
             onClick={() => handleSquareClick(index)}
+            sx={{
+              backgroundColor:
+                selectedSquare == index ? "#FF5C00 !important" : "inherit",
+            }}
           >
             {piece && (
               <Image
@@ -117,13 +133,12 @@ const Chessboard: React.FC = () => {
                 className={styles.piece}
               />
             )}
+            {possibleMoves.includes(indexToSquare(index)) && (
+              <Box className={styles.possibleMove} />
+            )}
           </Box>
         ))}
       </Box>
-      {/* <Box>
-        <Box>White: {timer.w} seconds</Box>
-        <Box>Black: {timer.b} seconds</Box>
-      </Box> */}
     </Box>
   );
 };
