@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
-import { Box } from "@mui/material";
+import { Alert, Box, Button, Snackbar } from "@mui/material";
 import { Chess, Square as ChessSquare } from "chess.js";
 import Image from "next/image";
 import styles from "./chessboard.module.css";
@@ -17,6 +17,7 @@ import White_Pawn from "@/assets/Pieces/White_Pawn.svg";
 import White_Queen from "@/assets/Pieces/White_Queen.svg";
 import White_Rook from "@/assets/Pieces/White_Rook.svg";
 
+// White small letter, Black big letter
 const pieceImages: { [key: string]: string } = {
   P: Black_Pawn,
   p: White_Pawn,
@@ -32,14 +33,39 @@ const pieceImages: { [key: string]: string } = {
   k: White_King,
 };
 
+const getBorderRadiusClass = (index: number) => {
+  switch (index) {
+    case 0:
+      return styles.borderTopLeft;
+    case 7:
+      return styles.borderTopRight;
+    case 56:
+      return styles.borderBottomLeft;
+    case 63:
+      return styles.borderBottomRight;
+    default:
+      return "";
+  }
+};
+
 const Chessboard: React.FC = () => {
+  const [snackbarMessage, setSnackbarMessage] = useState("");
   const [chess] = useState(new Chess());
   const [squares, setSquares] = useState<(string | null)[]>(
     Array(64).fill(null)
   );
   const [selectedSquare, setSelectedSquare] = useState<number | null>(null);
+
+  // This will store square index as "a8" | "b8" | "c8" | "d8" |...
   const [possibleMoves, setPossibleMoves] = useState<ChessSquare[]>([]);
   const [turn, setTurn] = useState<"w" | "b">("w");
+
+  const [shake, setShake] = useState(false);
+
+  const handleShakeScreen = () => {
+    setShake(true);
+    setTimeout(() => setShake(false), 500); // Shake duration should match the animation duration
+  };
 
   const updateBoard = useCallback(() => {
     const newSquares = Array(64).fill(null);
@@ -62,23 +88,53 @@ const Chessboard: React.FC = () => {
   }, [updateBoard]);
 
   const handleSquareClick = (index: number) => {
+    const fromSquare = indexToSquare(index);
+    const piece = chess.get(fromSquare);
+
+    // Check if a piece exists on the clicked square and if it's the turn of the correct color
+    if (piece && piece.color !== chess.turn()) {
+      handleShakeScreen();
+      setSnackbarMessage("Not your turn!");
+      return;
+    }
+
     if (selectedSquare === null) {
+      const fromSquare = indexToSquare(index);
+      const piece = chess.get(fromSquare);
+
+      // Check if a piece exists on the clicked square
+      if (!piece) {
+        handleShakeScreen();
+        setSnackbarMessage("No piece selected!");
+        return;
+      }
+
       setSelectedSquare(index);
+
+      // Setting possible moves
       const from = indexToSquare(index);
       const moves = chess
         .moves({ square: from, verbose: true })
         .map((move) => move.to);
       setPossibleMoves(moves);
     } else {
-      const from = indexToSquare(selectedSquare);
-      const to = indexToSquare(index);
-      const move = chess.move({ from, to });
-      if (move) {
-        setTurn(chess.turn() as "w" | "b");
-        updateBoard();
+      try {
+        // Making the move
+        const from = indexToSquare(selectedSquare);
+        const to = indexToSquare(index);
+        const move = chess.move({ from, to });
+        if (move) {
+          setTurn(chess.turn());
+          updateBoard();
+        }
+        setSelectedSquare(null);
+        setPossibleMoves([]);
+      } catch (e) {
+        handleShakeScreen();
+        setSnackbarMessage("Not a valid move!");
+        setSelectedSquare(null);
+        setPossibleMoves([]);
       }
-      setSelectedSquare(null);
-      setPossibleMoves([]);
     }
   };
 
@@ -88,58 +144,59 @@ const Chessboard: React.FC = () => {
     return `${file}${rank}` as ChessSquare;
   };
 
-  const squareToIndex = (square: ChessSquare): number => {
-    const file = square.charCodeAt(0) - 97;
-    const rank = 8 - parseInt(square[1], 10);
-    return rank * 8 + file;
-  };
-
-  const getBorderRadiusClass = (index: number) => {
-    switch (index) {
-      case 0:
-        return styles.borderTopLeft;
-      case 7:
-        return styles.borderTopRight;
-      case 56:
-        return styles.borderBottomLeft;
-      case 63:
-        return styles.borderBottomRight;
-      default:
-        return "";
-    }
+  const handleClose = () => {
+    setSnackbarMessage("");
   };
 
   return (
-    <Box className={styles.boardContainer}>
-      <Box className={styles.board}>
-        {squares.map((piece, index) => (
-          <Box
-            key={index}
-            className={`${styles.square} ${
-              (Math.floor(index / 8) + (index % 8)) % 2 === 0
-                ? styles.white
-                : styles.black
-            } ${getBorderRadiusClass(index)}`}
-            onClick={() => handleSquareClick(index)}
-            sx={{
-              backgroundColor:
-                selectedSquare == index ? "#FF5C00 !important" : "inherit",
-            }}
-          >
-            {piece && (
-              <Image
-                src={pieceImages[piece]}
-                alt={piece}
-                className={styles.piece}
-              />
-            )}
-            {possibleMoves.includes(indexToSquare(index)) && (
-              <Box className={styles.possibleMove} />
-            )}
-          </Box>
-        ))}
+    <>
+      <Box className={styles.boardContainer}>
+        <Box className={`${styles.board} ${shake ? styles.shake : ""}`}>
+          {shake && <Box className={styles.errorBox} />}
+          {squares.map((piece, index) => (
+            <Box
+              key={index}
+              className={`${styles.square} ${
+                (Math.floor(index / 8) + (index % 8)) % 2 === 0
+                  ? styles.white
+                  : styles.black
+              } ${getBorderRadiusClass(index)}`}
+              onClick={() => handleSquareClick(index)}
+              sx={{
+                backgroundColor:
+                  selectedSquare == index ? "#FF5C00 !important" : "inherit",
+              }}
+            >
+              {piece && (
+                <Image
+                  src={pieceImages[piece]}
+                  alt={piece}
+                  className={styles.piece}
+                />
+              )}
+              {possibleMoves.includes(indexToSquare(index)) && (
+                <Box className={styles.possibleMove} />
+              )}
+            </Box>
+          ))}
+        </Box>
       </Box>
-    </Box>
+      <Snackbar
+        open={!!snackbarMessage}
+        autoHideDuration={2000}
+        onClose={handleClose}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          onClose={handleClose}
+          severity="error"
+          variant="filled"
+          sx={{ width: "100%" }}
+        >
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
+    </>
   );
 };
 
