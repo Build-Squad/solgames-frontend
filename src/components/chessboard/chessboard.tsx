@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
-import { Alert, Box, Button, Snackbar } from "@mui/material";
+import { Alert, Box, Snackbar } from "@mui/material";
 import { Chess, Square as ChessSquare } from "chess.js";
 import Image from "next/image";
 import styles from "./chessboard.module.css";
@@ -48,6 +48,12 @@ const getBorderRadiusClass = (index: number) => {
   }
 };
 
+const indexToSquare = (index: number): ChessSquare => {
+  const file = String.fromCharCode(97 + (index % 8));
+  const rank = 8 - Math.floor(index / 8);
+  return `${file}${rank}` as ChessSquare;
+};
+
 const Chessboard: React.FC = () => {
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [chess] = useState(new Chess());
@@ -55,17 +61,14 @@ const Chessboard: React.FC = () => {
     Array(64).fill(null)
   );
   const [selectedSquare, setSelectedSquare] = useState<number | null>(null);
-
-  // This will store square index as "a8" | "b8" | "c8" | "d8" |...
   const [possibleMoves, setPossibleMoves] = useState<ChessSquare[]>([]);
   const [turn, setTurn] = useState<"w" | "b">("w");
-
   const [shake, setShake] = useState(false);
 
-  const handleShakeScreen = () => {
+  const handleShakeScreen = useCallback(() => {
     setShake(true);
-    setTimeout(() => setShake(false), 500); // Shake duration should match the animation duration
-  };
+    setTimeout(() => setShake(false), 1000);
+  }, []);
 
   const updateBoard = useCallback(() => {
     const newSquares = Array(64).fill(null);
@@ -83,70 +86,65 @@ const Chessboard: React.FC = () => {
     setSquares(newSquares);
   }, [chess]);
 
+  const handleSquareSelection = (index: number) => {
+    const fromSquare = indexToSquare(index);
+    const piece = chess.get(fromSquare);
+
+    if (!piece) {
+      handleShakeScreen();
+      setSnackbarMessage("No piece selected!");
+      return;
+    }
+
+    setSelectedSquare(index);
+    setPossibleMoves(
+      chess.moves({ square: fromSquare, verbose: true }).map((move) => move.to)
+    );
+  };
+
+  const handleMove = (index: number) => {
+    const from = indexToSquare(selectedSquare!);
+    const to = indexToSquare(index);
+    try {
+      const move = chess.move({ from, to });
+      if (move) {
+        setTurn(chess.turn());
+        updateBoard();
+      }
+    } catch {
+      handleShakeScreen();
+      setSnackbarMessage("Not a valid move!");
+    } finally {
+      setSelectedSquare(null);
+      setPossibleMoves([]);
+    }
+  };
+
+  const handleSquareClick = useCallback(
+    (index: number) => {
+      const fromSquare = indexToSquare(index);
+      const piece = chess.get(fromSquare);
+
+      if (piece && piece.color !== chess.turn()) {
+        handleShakeScreen();
+        setSnackbarMessage("Not your turn!");
+        return;
+      }
+
+      if (selectedSquare === null) {
+        handleSquareSelection(index);
+      } else {
+        handleMove(index);
+      }
+    },
+    [chess, selectedSquare, updateBoard, handleShakeScreen]
+  );
+
   useEffect(() => {
     updateBoard();
   }, [updateBoard]);
 
-  const handleSquareClick = (index: number) => {
-    const fromSquare = indexToSquare(index);
-    const piece = chess.get(fromSquare);
-
-    // Check if a piece exists on the clicked square and if it's the turn of the correct color
-    if (piece && piece.color !== chess.turn()) {
-      handleShakeScreen();
-      setSnackbarMessage("Not your turn!");
-      return;
-    }
-
-    if (selectedSquare === null) {
-      const fromSquare = indexToSquare(index);
-      const piece = chess.get(fromSquare);
-
-      // Check if a piece exists on the clicked square
-      if (!piece) {
-        handleShakeScreen();
-        setSnackbarMessage("No piece selected!");
-        return;
-      }
-
-      setSelectedSquare(index);
-
-      // Setting possible moves
-      const from = indexToSquare(index);
-      const moves = chess
-        .moves({ square: from, verbose: true })
-        .map((move) => move.to);
-      setPossibleMoves(moves);
-    } else {
-      try {
-        // Making the move
-        const from = indexToSquare(selectedSquare);
-        const to = indexToSquare(index);
-        const move = chess.move({ from, to });
-        if (move) {
-          setTurn(chess.turn());
-          updateBoard();
-        }
-        setSelectedSquare(null);
-        setPossibleMoves([]);
-      } catch (e) {
-        handleShakeScreen();
-        setSnackbarMessage("Not a valid move!");
-        setSelectedSquare(null);
-        setPossibleMoves([]);
-      }
-    }
-  };
-
-  const indexToSquare = (index: number): ChessSquare => {
-    const file = String.fromCharCode(97 + (index % 8));
-    const rank = 8 - Math.floor(index / 8);
-    return `${file}${rank}` as ChessSquare;
-  };
-
-  const handleClose = () => {
-    setSnackbarMessage("");
-  };
+  const handleCloseSnackbar = () => setSnackbarMessage("");
 
   return (
     <>
@@ -164,7 +162,7 @@ const Chessboard: React.FC = () => {
               onClick={() => handleSquareClick(index)}
               sx={{
                 backgroundColor:
-                  selectedSquare == index ? "#FF5C00 !important" : "inherit",
+                  selectedSquare === index ? "#FF5C00 !important" : "inherit",
               }}
             >
               {piece && (
@@ -183,12 +181,12 @@ const Chessboard: React.FC = () => {
       </Box>
       <Snackbar
         open={!!snackbarMessage}
-        autoHideDuration={2000}
-        onClose={handleClose}
+        autoHideDuration={1000}
+        onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: "top", horizontal: "center" }}
       >
         <Alert
-          onClose={handleClose}
+          onClose={handleCloseSnackbar}
           severity="error"
           variant="filled"
           sx={{ width: "100%" }}
