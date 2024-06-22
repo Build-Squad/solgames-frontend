@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Alert, Box, Snackbar } from "@mui/material";
 import { Chess, Square as ChessSquare } from "chess.js";
+import PlayerComp from "@/components/playerComp";
 import Image from "next/image";
 import styles from "./chessboard.module.css";
 import Black_Bishop from "@/assets/Pieces/Black_Bishop.svg";
@@ -149,6 +150,36 @@ const Chessboard: React.FC = () => {
   return (
     <>
       <Box className={styles.boardContainer}>
+        <Box
+          sx={{
+            position: "absolute",
+            top: "10%",
+            left: "0",
+            transform: "translateX(-100%)",
+          }}
+        >
+          <PlayerComp
+            alignDirection={"right"}
+            title="Sanjay Meena"
+            rank={"Master"}
+            pieces={[Black_Bishop, Black_Rook, Black_King]}
+          />
+        </Box>
+        <Box
+          sx={{
+            position: "absolute",
+            bottom: "10%",
+            right: "0",
+            transform: "translateX(100%)",
+          }}
+        >
+          <PlayerComp
+            alignDirection={"left"}
+            title="Parikshit Singh"
+            rank={"Junior"}
+            pieces={[White_Bishop, White_Rook]}
+          />
+        </Box>
         <Box className={`${styles.board} ${shake ? styles.shake : ""}`}>
           {shake && <Box className={styles.errorBox} />}
           {squares.map((piece, index) => (

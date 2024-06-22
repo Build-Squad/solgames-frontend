@@ -28,7 +28,6 @@ export default function Play({}: Props) {
       >
         <Box
           sx={{
-            alignItems: "center",
             height: "100%",
             display: "flex",
             justifyContent: "center",
