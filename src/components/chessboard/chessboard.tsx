@@ -148,8 +148,14 @@ const Chessboard: React.FC = () => {
   const handleCloseSnackbar = () => setSnackbarMessage("");
 
   return (
-    <>
+    <Box
+      sx={{
+        display: "flex",
+        justifyContent: "center",
+      }}
+    >
       <Box className={styles.boardContainer}>
+        {/* The white player box */}
         <Box
           sx={{
             position: "absolute",
@@ -159,12 +165,15 @@ const Chessboard: React.FC = () => {
           }}
         >
           <PlayerComp
+            isActive={false}
             alignDirection={"right"}
             title="Sanjay Meena"
             rank={"Master"}
-            pieces={[Black_Bishop, Black_Rook, Black_King]}
+            pieces={[White_Bishop, White_Rook]}
           />
         </Box>
+
+        {/* The black player box */}
         <Box
           sx={{
             position: "absolute",
@@ -174,10 +183,11 @@ const Chessboard: React.FC = () => {
           }}
         >
           <PlayerComp
+            isActive={true}
             alignDirection={"left"}
             title="Parikshit Singh"
             rank={"Junior"}
-            pieces={[White_Bishop, White_Rook]}
+            pieces={[Black_Bishop, Black_Rook, Black_King]}
           />
         </Box>
         <Box className={`${styles.board} ${shake ? styles.shake : ""}`}>
@@ -225,7 +235,7 @@ const Chessboard: React.FC = () => {
           {snackbarMessage}
         </Alert>
       </Snackbar>
-    </>
+    </Box>
   );
 };
 
