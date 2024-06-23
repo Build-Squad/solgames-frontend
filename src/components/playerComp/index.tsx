@@ -164,10 +164,10 @@ const PlayerComp = ({
     {/* Pieces */}
 
     <Box sx={{ px: "20px", mt: 2 }}>
-      {pieces.map((piece) => {
+      {pieces.map((piece, index) => {
         return (
           <Image
-            key={piece}
+            key={index}
             src={piece}
             alt={"pieces image"}
             style={{ height: "30px", width: "30px", marginRight: "-4px" }}

@@ -65,6 +65,8 @@ const Chessboard: React.FC = () => {
   const [possibleMoves, setPossibleMoves] = useState<ChessSquare[]>([]);
   const [turn, setTurn] = useState<"w" | "b">("w");
   const [shake, setShake] = useState(false);
+  const [capturedWhitePieces, setCapturedWhitePieces] = useState<string[]>([]);
+  const [capturedBlackPieces, setCapturedBlackPieces] = useState<string[]>([]);
 
   const handleShakeScreen = useCallback(() => {
     setShake(true);
@@ -109,6 +111,13 @@ const Chessboard: React.FC = () => {
     try {
       const move = chess.move({ from, to });
       if (move) {
+        if (move.captured) {
+          if (move.color === "w") {
+            setCapturedBlackPieces((prev) => [...prev, move.captured!]);
+          } else {
+            setCapturedWhitePieces((prev) => [...prev, move.captured!]);
+          }
+        }
         setTurn(chess.turn());
         updateBoard();
       }
@@ -126,16 +135,31 @@ const Chessboard: React.FC = () => {
       const fromSquare = indexToSquare(index);
       const piece = chess.get(fromSquare);
 
-      if (piece && piece.color !== chess.turn()) {
-        handleShakeScreen();
-        setSnackbarMessage("Not your turn!");
-        return;
-      }
-
       if (selectedSquare === null) {
-        handleSquareSelection(index);
+        // First selection, must select a piece of the current player's turn
+        if (piece && piece.color === chess.turn()) {
+          handleSquareSelection(index);
+        } else {
+          handleShakeScreen();
+          setSnackbarMessage("Select a valid piece!");
+        }
       } else {
-        handleMove(index);
+        // If selecting another piece of the current player's color
+        if (piece && piece.color === chess.turn()) {
+          handleSquareSelection(index);
+          return;
+        }
+        // Second selection, must be a valid move
+        const move = { from: indexToSquare(selectedSquare), to: fromSquare };
+        const legalMoves = chess
+          .moves({ square: move.from, verbose: true })
+          .map((m) => m.to);
+        if (legalMoves.includes(fromSquare)) {
+          handleMove(index);
+        } else {
+          handleShakeScreen();
+          setSnackbarMessage("Not a valid move!");
+        }
       }
     },
     [chess, selectedSquare, updateBoard, handleShakeScreen]
@@ -169,7 +193,11 @@ const Chessboard: React.FC = () => {
             alignDirection={"right"}
             title="Sanjay Meena"
             rank={"Master"}
-            pieces={[White_Bishop, White_Rook]}
+            pieces={[
+              ...capturedBlackPieces.map(
+                (piece) => pieceImages[piece.toUpperCase()]
+              ),
+            ]}
           />
         </Box>
 
@@ -187,7 +215,11 @@ const Chessboard: React.FC = () => {
             alignDirection={"left"}
             title="Parikshit Singh"
             rank={"Junior"}
-            pieces={[Black_Bishop, Black_Rook, Black_King]}
+            pieces={[
+              ...capturedWhitePieces.map(
+                (piece) => pieceImages[piece.toLowerCase()]
+              ),
+            ]}
           />
         </Box>
         <Box className={`${styles.board} ${shake ? styles.shake : ""}`}>
