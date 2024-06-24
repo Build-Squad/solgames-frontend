@@ -18,7 +18,7 @@ export default function Play({}: Props) {
     >
       <Box
         sx={{
-          height: "80%",
+          height: "fit-content",
           width: "100%",
           backgroundImage: `url(${World_map.src})`,
           backgroundSize: "cover",
@@ -26,16 +26,7 @@ export default function Play({}: Props) {
           backgroundRepeat: "no-repeat",
         }}
       >
-        <Box
-          sx={{
-            alignItems: "center",
-            height: "100%",
-            display: "flex",
-            justifyContent: "center",
-          }}
-        >
-          <Chessboard />
-        </Box>
+        <Chessboard />
       </Box>
     </Box>
   );
