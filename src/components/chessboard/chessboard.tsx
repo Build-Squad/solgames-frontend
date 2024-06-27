@@ -186,6 +186,8 @@ const Chessboard: React.FC = () => {
     const to = indexToSquare(index);
     const move = { from, to };
     socket?.emit("makeMove", { gameId, move });
+    setPossibleMoves([]);
+    setSelectedSquare(null);
   };
 
   const handleSquareClick = useCallback(
@@ -247,7 +249,7 @@ const Chessboard: React.FC = () => {
             }}
           >
             <PlayerComp
-              isActive={false}
+              isActive={turn == "b"}
               alignDirection={"right"}
               title="Sanjay Meena"
               rank={"Master"}
@@ -269,7 +271,7 @@ const Chessboard: React.FC = () => {
             }}
           >
             <PlayerComp
-              isActive={true}
+              isActive={turn == "w"}
               alignDirection={"left"}
               title="Parikshit Singh"
               rank={"Junior"}
@@ -336,6 +338,9 @@ const Chessboard: React.FC = () => {
           textAlign: "center",
         }}
       >
+        <Typography variant="h6">
+          Who&apos;s Turn? {turn == "w" ? "Black" : "White"}
+        </Typography>
         <Typography variant="h3">
           You are {playerColor == "w" ? "White Player" : "Black Player"}
         </Typography>
