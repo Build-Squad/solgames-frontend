@@ -18,6 +18,9 @@ import White_Pawn from "@/assets/Pieces/White_Pawn.svg";
 import White_Queen from "@/assets/Pieces/White_Queen.svg";
 import White_Rook from "@/assets/Pieces/White_Rook.svg";
 import { io, Socket } from "socket.io-client";
+import { useRouter } from "next/navigation";
+import { GAME_CODE } from "@/utils/constants";
+import { useSearchParams } from "next/navigation";
 
 // White small letter, Black big letter
 const pieceImages: { [key: string]: string } = {
@@ -57,6 +60,11 @@ const indexToSquare = (index: number): ChessSquare => {
 };
 
 const Chessboard: React.FC = () => {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  const inviteCode = searchParams.get("inviteCode");
+
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [chess, setChess] = useState(new Chess());
   const [squares, setSquares] = useState<(string | null)[]>(
@@ -79,6 +87,16 @@ const Chessboard: React.FC = () => {
       newSocket.close();
     };
   }, []);
+
+  useEffect(() => {
+    if (socket) {
+      if (inviteCode) {
+        socket.emit("joinGame", inviteCode);
+      } else {
+        socket.emit("createGame", GAME_CODE);
+      }
+    }
+  }, [socket]);
 
   const updateBoard = useCallback((chessInstance: Chess) => {
     const newSquares = Array(64).fill(null);
@@ -112,6 +130,9 @@ const Chessboard: React.FC = () => {
 
       socket.on("playerJoined", (game: any) => {
         setGameId(game.id);
+        const newChess = new Chess(game.chess);
+        setChess(newChess);
+        updateBoard(newChess);
       });
 
       socket.on("moveMade", (game: any) => {
@@ -125,12 +146,13 @@ const Chessboard: React.FC = () => {
 
       socket.on("error", (message) => {
         handleShakeScreen();
-        setSnackbarMessage(message);
+        setSnackbarMessage(message?.errorMessage || message);
+        setTimeout(() => {
+          if (message?.event == "createGame") {
+            router.push("/");
+          }
+        }, 1300);
       });
-
-      // Create a new game or join an existing one
-      socket.emit("createGame", "game1"); // You can replace "game1" with a unique game ID
-      socket.emit("joinGame", "game1");
     }
   }, [socket, updateBoard, handleShakeScreen]);
 
