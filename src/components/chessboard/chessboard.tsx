@@ -17,6 +17,7 @@ import White_Knight from "@/assets/Pieces/White_Knight.svg";
 import White_Pawn from "@/assets/Pieces/White_Pawn.svg";
 import White_Queen from "@/assets/Pieces/White_Queen.svg";
 import White_Rook from "@/assets/Pieces/White_Rook.svg";
+import { io, Socket } from "socket.io-client";
 
 // White small letter, Black big letter
 const pieceImages: { [key: string]: string } = {
@@ -57,7 +58,7 @@ const indexToSquare = (index: number): ChessSquare => {
 
 const Chessboard: React.FC = () => {
   const [snackbarMessage, setSnackbarMessage] = useState("");
-  const [chess] = useState(new Chess());
+  const [chess, setChess] = useState(new Chess());
   const [squares, setSquares] = useState<(string | null)[]>(
     Array(64).fill(null)
   );
@@ -67,15 +68,21 @@ const Chessboard: React.FC = () => {
   const [shake, setShake] = useState(false);
   const [capturedWhitePieces, setCapturedWhitePieces] = useState<string[]>([]);
   const [capturedBlackPieces, setCapturedBlackPieces] = useState<string[]>([]);
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const [gameId, setGameId] = useState<string | null>(null);
 
-  const handleShakeScreen = useCallback(() => {
-    setShake(true);
-    setTimeout(() => setShake(false), 1000);
+  useEffect(() => {
+    const newSocket = io("http://localhost:3000");
+    setSocket(newSocket);
+
+    return () => {
+      newSocket.close();
+    };
   }, []);
 
-  const updateBoard = useCallback(() => {
+  const updateBoard = useCallback((chessInstance: Chess) => {
     const newSquares = Array(64).fill(null);
-    chess.board().forEach((row, rowIndex) => {
+    chessInstance.board().forEach((row, rowIndex) => {
       row.forEach((piece, colIndex) => {
         if (piece) {
           const pieceSymbol =
@@ -87,7 +94,45 @@ const Chessboard: React.FC = () => {
       });
     });
     setSquares(newSquares);
-  }, [chess]);
+  }, []);
+
+  const handleShakeScreen = useCallback(() => {
+    setShake(true);
+    setTimeout(() => setShake(false), 1000);
+  }, []);
+
+  useEffect(() => {
+    if (socket) {
+      socket.on("gameCreated", (game: any) => {
+        setGameId(game.id);
+        const newChess = new Chess(game.chess);
+        setChess(newChess);
+        updateBoard(newChess);
+      });
+
+      socket.on("playerJoined", (game: any) => {
+        setGameId(game.id);
+      });
+
+      socket.on("moveMade", (game: any) => {
+        const newChess = new Chess(game.chess);
+        setChess(newChess);
+        updateBoard(newChess);
+        setTurn(game.turn);
+        setCapturedWhitePieces(game.capturedWhitePieces);
+        setCapturedBlackPieces(game.capturedBlackPieces);
+      });
+
+      socket.on("error", (message) => {
+        handleShakeScreen();
+        setSnackbarMessage(message);
+      });
+
+      // Create a new game or join an existing one
+      socket.emit("createGame", "game1"); // You can replace "game1" with a unique game ID
+      socket.emit("joinGame", "game1");
+    }
+  }, [socket, updateBoard, handleShakeScreen]);
 
   const handleSquareSelection = (index: number) => {
     const fromSquare = indexToSquare(index);
@@ -108,26 +153,8 @@ const Chessboard: React.FC = () => {
   const handleMove = (index: number) => {
     const from = indexToSquare(selectedSquare!);
     const to = indexToSquare(index);
-    try {
-      const move = chess.move({ from, to });
-      if (move) {
-        if (move.captured) {
-          if (move.color === "w") {
-            setCapturedBlackPieces((prev) => [...prev, move.captured!]);
-          } else {
-            setCapturedWhitePieces((prev) => [...prev, move.captured!]);
-          }
-        }
-        setTurn(chess.turn());
-        updateBoard();
-      }
-    } catch {
-      handleShakeScreen();
-      setSnackbarMessage("Not a valid move!");
-    } finally {
-      setSelectedSquare(null);
-      setPossibleMoves([]);
-    }
+    const move = { from, to };
+    socket?.emit("makeMove", { gameId, move });
   };
 
   const handleSquareClick = useCallback(
@@ -150,24 +177,15 @@ const Chessboard: React.FC = () => {
           return;
         }
         // Second selection, must be a valid move
-        const move = { from: indexToSquare(selectedSquare), to: fromSquare };
-        const legalMoves = chess
-          .moves({ square: move.from, verbose: true })
-          .map((m) => m.to);
-        if (legalMoves.includes(fromSquare)) {
-          handleMove(index);
-        } else {
-          handleShakeScreen();
-          setSnackbarMessage("Not a valid move!");
-        }
+        handleMove(index);
       }
     },
-    [chess, selectedSquare, updateBoard, handleShakeScreen]
+    [chess, selectedSquare, handleMove, handleShakeScreen]
   );
 
   useEffect(() => {
-    updateBoard();
-  }, [updateBoard]);
+    updateBoard(chess);
+  }, [updateBoard, chess]);
 
   const handleCloseSnackbar = () => setSnackbarMessage("");
 
