@@ -1,7 +1,10 @@
+
+
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import Navbar from "../components/navbar/navbar";
 import "./globals.css";
+import { SocketProvider } from "@/context/socketContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -18,8 +21,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <Navbar />
-        {children}
+        <SocketProvider>
+          <Navbar />
+          {children}
+        </SocketProvider>
       </body>
     </html>
   );

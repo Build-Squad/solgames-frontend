@@ -17,10 +17,10 @@ import White_Knight from "@/assets/Pieces/White_Knight.svg";
 import White_Pawn from "@/assets/Pieces/White_Pawn.svg";
 import White_Queen from "@/assets/Pieces/White_Queen.svg";
 import White_Rook from "@/assets/Pieces/White_Rook.svg";
-import { io, Socket } from "socket.io-client";
 import { useRouter } from "next/navigation";
-import { GAME_CODE } from "@/utils/constants";
 import { useSearchParams } from "next/navigation";
+import { useSocket } from "@/context/socketContext";
+import { ContentCopy } from "@mui/icons-material";
 
 // White small letter, Black big letter
 const pieceImages: { [key: string]: string } = {
@@ -62,8 +62,10 @@ const indexToSquare = (index: number): ChessSquare => {
 const Chessboard: React.FC = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { socket, setSocket } = useSocket();
 
   const inviteCode = searchParams.get("inviteCode");
+  const gameCode = searchParams.get("gameCode");
 
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [chess, setChess] = useState(new Chess());
@@ -76,28 +78,19 @@ const Chessboard: React.FC = () => {
   const [shake, setShake] = useState(false);
   const [capturedWhitePieces, setCapturedWhitePieces] = useState<string[]>([]);
   const [capturedBlackPieces, setCapturedBlackPieces] = useState<string[]>([]);
-  const [socket, setSocket] = useState<Socket | null>(null);
   const [gameId, setGameId] = useState<string | null>(null);
   const [playerColor, setPlayerColor] = useState<"w" | "b" | null>(null);
 
   useEffect(() => {
-    const newSocket = io("http://localhost:3000");
-    setSocket(newSocket);
-
-    return () => {
-      newSocket.close();
-    };
-  }, []);
-
-  useEffect(() => {
+    console.log("useEffect");
     if (socket) {
       if (inviteCode) {
         socket.emit("joinGame", inviteCode);
-      } else {
-        socket.emit("createGame", GAME_CODE);
+      } else if (gameCode) {
+        socket.emit("createGame", gameCode);
       }
     }
-  }, [socket]);
+  }, []);
 
   const updateBoard = useCallback((chessInstance: Chess) => {
     const newSquares = Array(64).fill(null);
@@ -156,11 +149,11 @@ const Chessboard: React.FC = () => {
       socket.on("error", (message) => {
         handleShakeScreen();
         setSnackbarMessage(message?.errorMessage || message);
-        setTimeout(() => {
-          if (message?.event == "createGame") {
-            router.push("/");
-          }
-        }, 1300);
+        // setTimeout(() => {
+        //   if (message?.event == "createGame") {
+        //     router.push("/");
+        //   }
+        // }, 1300);
       });
     }
   }, [socket, updateBoard, handleShakeScreen]);
@@ -230,8 +223,40 @@ const Chessboard: React.FC = () => {
 
   const handleCloseSnackbar = () => setSnackbarMessage("");
 
+  const handleCopyCode = () => {
+    navigator.clipboard.writeText(gameCode);
+  };
+
   return (
     <>
+      {gameCode ? (
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            marginTop: "5%",
+            py: 1,
+            px: 3,
+            backgroundColor: "#FF5C00",
+          }}
+        >
+          <Typography
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "Center",
+              columnGap: "12px",
+            }}
+          >
+            Invite you friend using this code - {gameCode}
+            <ContentCopy
+              onClick={handleCopyCode}
+              style={{ cursor: "pointer" }}
+              fontSize="small"
+            />
+          </Typography>
+        </Box>
+      ) : null}
       <Box
         sx={{
           display: "flex",
