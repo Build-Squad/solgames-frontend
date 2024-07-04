@@ -83,7 +83,6 @@ const Chessboard: React.FC = () => {
   );
   const [selectedSquare, setSelectedSquare] = useState<number | null>(null);
   const [possibleMoves, setPossibleMoves] = useState<ChessSquare[]>([]);
-  const [turn, setTurn] = useState<"w" | "b">("w");
   const [shake, setShake] = useState(false);
   const [capturedWhitePieces, setCapturedWhitePieces] = useState<string[]>([]);
   const [capturedBlackPieces, setCapturedBlackPieces] = useState<string[]>([]);
@@ -131,7 +130,7 @@ const Chessboard: React.FC = () => {
         const newChess = new Chess(game.chess);
         setChess(newChess);
         updateBoard(newChess);
-        setTurn(game.turn);
+        console.log("game created with turn = ", newChess.turn());
         const player = game.players.find(
           (player: any) => player.id === socket.id
         );
@@ -144,7 +143,6 @@ const Chessboard: React.FC = () => {
         const newChess = new Chess(game.chess);
         setChess(newChess);
         updateBoard(newChess);
-        setTurn(game.turn);
         const player = game.players.find(
           (player: any) => player.id === socket.id
         );
@@ -152,14 +150,13 @@ const Chessboard: React.FC = () => {
         setIsValidGame(true);
       });
 
-      // socket.on("moveMade", (game: any) => {
-      //   const newChess = new Chess(game.chess);
-      //   setChess(newChess);
-      //   updateBoard(newChess);
-      //   setTurn(game.turn);
-      //   setCapturedWhitePieces(game.capturedWhitePieces);
-      //   setCapturedBlackPieces(game.capturedBlackPieces);
-      // });
+      socket.on("moveMade", (game: any) => {
+        const newChess = new Chess(game.chess);
+        setChess(newChess);
+        updateBoard(newChess);
+        setCapturedWhitePieces(game.capturedWhitePieces);
+        setCapturedBlackPieces(game.capturedBlackPieces);
+      });
 
       socket.on("error", (message) => {
         handleShakeScreen();
@@ -201,40 +198,38 @@ const Chessboard: React.FC = () => {
     setPossibleMoves([]);
     setSelectedSquare(null);
   };
+  console.log(chess.turn());
 
-  const handleSquareClick = useCallback(
-    (index: number) => {
-      const fromSquare = indexToSquare(index);
-      const piece = chess.get(fromSquare);
+  const handleSquareClick = (index: number) => {
+    const fromSquare = indexToSquare(index);
+    const piece = chess.get(fromSquare);
 
-      if (selectedSquare === null) {
-        // First selection, must select a piece of the current player's turn
-        if (
-          piece &&
-          piece.color === chess.turn() &&
-          piece.color === playerColor
-        ) {
-          handleSquareSelection(index);
-        } else {
-          handleShakeScreen();
-          setSnackbarMessage("Select a valid piece!");
-        }
+    if (selectedSquare === null) {
+      // First selection, must select a piece of the current player's turn
+      if (
+        piece &&
+        piece.color === chess.turn() &&
+        piece.color === playerColor
+      ) {
+        handleSquareSelection(index);
       } else {
-        // If selecting another piece of the current player's color
-        if (
-          piece &&
-          piece.color === chess.turn() &&
-          piece.color === playerColor
-        ) {
-          handleSquareSelection(index);
-          return;
-        }
-        // Second selection, must be a valid move
-        handleMove(index);
+        handleShakeScreen();
+        setSnackbarMessage("Select a valid piece!");
       }
-    },
-    [chess, selectedSquare, handleMove, handleShakeScreen, playerColor]
-  );
+    } else {
+      // If selecting another piece of the current player's color
+      if (
+        piece &&
+        piece.color === chess.turn() &&
+        piece.color === playerColor
+      ) {
+        handleSquareSelection(index);
+        return;
+      }
+      // Second selection, must be a valid move
+      handleMove(index);
+    }
+  };
 
   useEffect(() => {
     updateBoard(chess);
@@ -246,6 +241,7 @@ const Chessboard: React.FC = () => {
     navigator.clipboard.writeText(gameCode);
   };
 
+  // Loading the game
   if (!isValidGame)
     return (
       <>
@@ -320,7 +316,7 @@ const Chessboard: React.FC = () => {
             }}
           >
             <PlayerComp
-              isActive={turn == "b"}
+              isActive={chess.turn() == "b"}
               alignDirection={"right"}
               title="Sanjay Meena"
               rank={"Master"}
@@ -342,7 +338,7 @@ const Chessboard: React.FC = () => {
             }}
           >
             <PlayerComp
-              isActive={turn == "w"}
+              isActive={chess.turn() == "w"}
               alignDirection={"left"}
               title="Parikshit Singh"
               rank={"Junior"}
@@ -394,7 +390,7 @@ const Chessboard: React.FC = () => {
         }}
       >
         <Typography variant="h6">
-          Who&apos;s Turn? {turn == "w" ? "White" : "Black"}
+          Who&apos;s Turn? {chess.turn() == "w" ? "White" : "Black"}
         </Typography>
         <Typography variant="h3">
           You are {playerColor == "w" ? "White Player" : "Black Player"}
