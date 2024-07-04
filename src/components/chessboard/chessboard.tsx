@@ -1,6 +1,13 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
-import { Alert, Box, Snackbar, Typography } from "@mui/material";
+import {
+  Alert,
+  Backdrop,
+  Box,
+  CircularProgress,
+  Snackbar,
+  Typography,
+} from "@mui/material";
 import { Chess, Square as ChessSquare } from "chess.js";
 import PlayerComp from "@/components/playerComp";
 import Image from "next/image";
@@ -67,6 +74,8 @@ const Chessboard: React.FC = () => {
   const inviteCode = searchParams.get("inviteCode");
   const gameCode = searchParams.get("gameCode");
 
+  const [compInviteCode, setCompInviteCode] = useState(inviteCode);
+  const [compGameCode, setCompGameCode] = useState(gameCode);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [chess, setChess] = useState(new Chess());
   const [squares, setSquares] = useState<(string | null)[]>(
@@ -80,17 +89,19 @@ const Chessboard: React.FC = () => {
   const [capturedBlackPieces, setCapturedBlackPieces] = useState<string[]>([]);
   const [gameId, setGameId] = useState<string | null>(null);
   const [playerColor, setPlayerColor] = useState<"w" | "b" | null>(null);
+  const [isValidGame, setIsValidGame] = useState(false);
 
   useEffect(() => {
-    console.log("useEffect");
     if (socket) {
-      if (inviteCode) {
+      if (compInviteCode) {
         socket.emit("joinGame", inviteCode);
-      } else if (gameCode) {
+        setCompInviteCode("");
+      } else if (compGameCode) {
         socket.emit("createGame", gameCode);
+        setCompGameCode("");
       }
     }
-  }, []);
+  }, [inviteCode, gameCode, socket]);
 
   const updateBoard = useCallback((chessInstance: Chess) => {
     const newSquares = Array(64).fill(null);
@@ -120,10 +131,12 @@ const Chessboard: React.FC = () => {
         const newChess = new Chess(game.chess);
         setChess(newChess);
         updateBoard(newChess);
+        setTurn(game.turn);
         const player = game.players.find(
           (player: any) => player.id === socket.id
         );
         setPlayerColor(player.color);
+        setIsValidGame(true);
       });
 
       socket.on("playerJoined", (game: any) => {
@@ -131,29 +144,35 @@ const Chessboard: React.FC = () => {
         const newChess = new Chess(game.chess);
         setChess(newChess);
         updateBoard(newChess);
+        setTurn(game.turn);
         const player = game.players.find(
           (player: any) => player.id === socket.id
         );
         setPlayerColor(player.color);
+        setIsValidGame(true);
       });
 
-      socket.on("moveMade", (game: any) => {
-        const newChess = new Chess(game.chess);
-        setChess(newChess);
-        updateBoard(newChess);
-        setTurn(game.turn);
-        setCapturedWhitePieces(game.capturedWhitePieces);
-        setCapturedBlackPieces(game.capturedBlackPieces);
-      });
+      // socket.on("moveMade", (game: any) => {
+      //   const newChess = new Chess(game.chess);
+      //   setChess(newChess);
+      //   updateBoard(newChess);
+      //   setTurn(game.turn);
+      //   setCapturedWhitePieces(game.capturedWhitePieces);
+      //   setCapturedBlackPieces(game.capturedBlackPieces);
+      // });
 
       socket.on("error", (message) => {
         handleShakeScreen();
-        setSnackbarMessage(message?.errorMessage || message);
-        // setTimeout(() => {
-        //   if (message?.event == "createGame") {
-        //     router.push("/");
-        //   }
-        // }, 1300);
+        setSnackbarMessage(message?.errorMessage);
+        setTimeout(() => {
+          if (
+            message?.errorType == "GAME_EXISTS" ||
+            message?.errorType == "GAME_NOT_FOUND" ||
+            message?.errorType == "LOBBY_FULL"
+          ) {
+            router.push("/");
+          }
+        }, 3000);
       });
     }
   }, [socket, updateBoard, handleShakeScreen]);
@@ -226,6 +245,33 @@ const Chessboard: React.FC = () => {
   const handleCopyCode = () => {
     navigator.clipboard.writeText(gameCode);
   };
+
+  if (!isValidGame)
+    return (
+      <>
+        <Backdrop
+          sx={{ color: "#fff", zIndex: (theme) => theme.zIndex.drawer + 1 }}
+          open={true}
+        >
+          <CircularProgress color="inherit" />
+        </Backdrop>
+        <Snackbar
+          open={!!snackbarMessage}
+          autoHideDuration={3000}
+          onClose={handleCloseSnackbar}
+          anchorOrigin={{ vertical: "top", horizontal: "center" }}
+        >
+          <Alert
+            onClose={handleCloseSnackbar}
+            severity="error"
+            variant="filled"
+            sx={{ width: "100%" }}
+          >
+            {snackbarMessage}
+          </Alert>
+        </Snackbar>
+      </>
+    );
 
   return (
     <>
@@ -337,22 +383,6 @@ const Chessboard: React.FC = () => {
             ))}
           </Box>
         </Box>
-
-        <Snackbar
-          open={!!snackbarMessage}
-          autoHideDuration={1000}
-          onClose={handleCloseSnackbar}
-          anchorOrigin={{ vertical: "top", horizontal: "center" }}
-        >
-          <Alert
-            onClose={handleCloseSnackbar}
-            severity="error"
-            variant="filled"
-            sx={{ width: "100%" }}
-          >
-            {snackbarMessage}
-          </Alert>
-        </Snackbar>
       </Box>
       <Box
         sx={{
@@ -364,12 +394,27 @@ const Chessboard: React.FC = () => {
         }}
       >
         <Typography variant="h6">
-          Who&apos;s Turn? {turn == "w" ? "Black" : "White"}
+          Who&apos;s Turn? {turn == "w" ? "White" : "Black"}
         </Typography>
         <Typography variant="h3">
           You are {playerColor == "w" ? "White Player" : "Black Player"}
         </Typography>
       </Box>
+      <Snackbar
+        open={!!snackbarMessage}
+        autoHideDuration={1000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity="error"
+          variant="filled"
+          sx={{ width: "100%" }}
+        >
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
     </>
   );
 };
