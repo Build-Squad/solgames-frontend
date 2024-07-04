@@ -31,18 +31,18 @@ import { ContentCopy } from "@mui/icons-material";
 
 // White small letter, Black big letter
 const pieceImages: { [key: string]: string } = {
-  P: Black_Pawn,
-  p: White_Pawn,
-  N: Black_Knight,
-  n: White_Knight,
-  B: Black_Bishop,
-  b: White_Bishop,
-  R: Black_Rook,
-  r: White_Rook,
-  Q: Black_Queen,
-  q: White_Queen,
-  K: Black_King,
-  k: White_King,
+  P: White_Pawn,
+  p: Black_Pawn,
+  N: White_Knight,
+  n: Black_Knight,
+  B: White_Bishop,
+  b: Black_Bishop,
+  R: White_Rook,
+  r: Black_Rook,
+  Q: White_Queen,
+  q: Black_Queen,
+  K: White_King,
+  k: Black_King,
 };
 
 const getBorderRadiusClass = (index: number) => {
@@ -89,6 +89,7 @@ const Chessboard: React.FC = () => {
   const [gameId, setGameId] = useState<string | null>(null);
   const [playerColor, setPlayerColor] = useState<"w" | "b" | null>(null);
   const [isValidGame, setIsValidGame] = useState(false);
+  const isWhitePlayer = playerColor == "w";
 
   useEffect(() => {
     if (socket) {
@@ -130,7 +131,6 @@ const Chessboard: React.FC = () => {
         const newChess = new Chess(game.chess);
         setChess(newChess);
         updateBoard(newChess);
-        console.log("game created with turn = ", newChess.turn());
         const player = game.players.find(
           (player: any) => player.id === socket.id
         );
@@ -198,7 +198,6 @@ const Chessboard: React.FC = () => {
     setPossibleMoves([]);
     setSelectedSquare(null);
   };
-  console.log(chess.turn());
 
   const handleSquareClick = (index: number) => {
     const fromSquare = indexToSquare(index);
@@ -214,7 +213,11 @@ const Chessboard: React.FC = () => {
         handleSquareSelection(index);
       } else {
         handleShakeScreen();
-        setSnackbarMessage("Select a valid piece!");
+        if (chess.turn() != playerColor) {
+          setSnackbarMessage("Not your turn!");
+        } else if (!piece) setSnackbarMessage("Select a piece!");
+        else if (piece.color !== playerColor)
+          setSnackbarMessage("Not your piece!");
       }
     } else {
       // If selecting another piece of the current player's color
@@ -239,6 +242,13 @@ const Chessboard: React.FC = () => {
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(gameCode);
+  };
+
+  const doesPossibleMoveCutsPiece = (index: number) => {
+    const fromSquare = indexToSquare(index);
+    const piece = chess.get(fromSquare);
+
+    return piece && possibleMoves.includes(fromSquare);
   };
 
   // Loading the game
@@ -373,7 +383,12 @@ const Chessboard: React.FC = () => {
                   />
                 )}
                 {possibleMoves.includes(indexToSquare(index)) && (
-                  <Box className={styles.possibleMove} />
+                  <Box
+                    className={`${styles.possibleMove} ${
+                      doesPossibleMoveCutsPiece(index) &&
+                      styles.possibleMoveCanCut
+                    }`}
+                  />
                 )}
               </Box>
             ))}
