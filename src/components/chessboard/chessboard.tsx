@@ -45,16 +45,16 @@ const pieceImages: { [key: string]: string } = {
   k: Black_King,
 };
 
-const getBorderRadiusClass = (index: number) => {
+const getBorderRadiusClass = (index: number, isWhitePlayer: boolean) => {
   switch (index) {
     case 0:
-      return styles.borderTopLeft;
+      return isWhitePlayer ? styles.borderTopLeft : styles.borderBottomRight;
     case 7:
-      return styles.borderTopRight;
+      return isWhitePlayer ? styles.borderTopRight : styles.borderBottomLeft;
     case 56:
-      return styles.borderBottomLeft;
+      return isWhitePlayer ? styles.borderBottomLeft : styles.borderTopRight;
     case 63:
-      return styles.borderBottomRight;
+      return isWhitePlayer ? styles.borderBottomRight : styles.borderTopLeft;
     default:
       return "";
   }
@@ -359,7 +359,12 @@ const Chessboard: React.FC = () => {
               ]}
             />
           </Box>
-          <Box className={`${styles.board} ${shake ? styles.shake : ""}`}>
+          <Box
+            className={`${styles.board} ${shake ? styles.shake : ""}`}
+            style={{
+              transform: isWhitePlayer ? "rotate(0deg)" : "rotate(180deg)",
+            }}
+          >
             {shake && <Box className={styles.errorBox} />}
             {squares.map((piece, index) => (
               <Box
@@ -368,11 +373,14 @@ const Chessboard: React.FC = () => {
                   (Math.floor(index / 8) + (index % 8)) % 2 === 0
                     ? styles.white
                     : styles.black
-                } ${getBorderRadiusClass(index)}`}
+                } ${getBorderRadiusClass(index, isWhitePlayer)}`}
                 onClick={() => handleSquareClick(index)}
                 sx={{
                   backgroundColor:
                     selectedSquare === index ? "#FF5C00 !important" : "inherit",
+                }}
+                style={{
+                  transform: isWhitePlayer ? "rotate(0deg)" : "rotate(180deg)",
                 }}
               >
                 {piece && (
