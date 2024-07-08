@@ -1,6 +1,13 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
-import { Alert, Box, Snackbar } from "@mui/material";
+import {
+  Alert,
+  Backdrop,
+  Box,
+  CircularProgress,
+  Snackbar,
+  Typography,
+} from "@mui/material";
 import { Chess, Square as ChessSquare } from "chess.js";
 import PlayerComp from "@/components/playerComp";
 import Image from "next/image";
@@ -17,33 +24,37 @@ import White_Knight from "@/assets/Pieces/White_Knight.svg";
 import White_Pawn from "@/assets/Pieces/White_Pawn.svg";
 import White_Queen from "@/assets/Pieces/White_Queen.svg";
 import White_Rook from "@/assets/Pieces/White_Rook.svg";
+import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useSocket } from "@/context/socketContext";
+import { ContentCopy } from "@mui/icons-material";
 
 // White small letter, Black big letter
 const pieceImages: { [key: string]: string } = {
-  P: Black_Pawn,
-  p: White_Pawn,
-  N: Black_Knight,
-  n: White_Knight,
-  B: Black_Bishop,
-  b: White_Bishop,
-  R: Black_Rook,
-  r: White_Rook,
-  Q: Black_Queen,
-  q: White_Queen,
-  K: Black_King,
-  k: White_King,
+  P: White_Pawn,
+  p: Black_Pawn,
+  N: White_Knight,
+  n: Black_Knight,
+  B: White_Bishop,
+  b: Black_Bishop,
+  R: White_Rook,
+  r: Black_Rook,
+  Q: White_Queen,
+  q: Black_Queen,
+  K: White_King,
+  k: Black_King,
 };
 
-const getBorderRadiusClass = (index: number) => {
+const getBorderRadiusClass = (index: number, isWhitePlayer: boolean) => {
   switch (index) {
     case 0:
-      return styles.borderTopLeft;
+      return isWhitePlayer ? styles.borderTopLeft : styles.borderBottomRight;
     case 7:
-      return styles.borderTopRight;
+      return isWhitePlayer ? styles.borderTopRight : styles.borderBottomLeft;
     case 56:
-      return styles.borderBottomLeft;
+      return isWhitePlayer ? styles.borderBottomLeft : styles.borderTopRight;
     case 63:
-      return styles.borderBottomRight;
+      return isWhitePlayer ? styles.borderBottomRight : styles.borderTopLeft;
     default:
       return "";
   }
@@ -56,26 +67,45 @@ const indexToSquare = (index: number): ChessSquare => {
 };
 
 const Chessboard: React.FC = () => {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const { socket, setSocket } = useSocket();
+
+  const inviteCode = searchParams.get("inviteCode");
+  const gameCode = searchParams.get("gameCode");
+
+  const [compInviteCode, setCompInviteCode] = useState(inviteCode);
+  const [compGameCode, setCompGameCode] = useState(gameCode);
   const [snackbarMessage, setSnackbarMessage] = useState("");
-  const [chess] = useState(new Chess());
+  const [chess, setChess] = useState(new Chess());
   const [squares, setSquares] = useState<(string | null)[]>(
     Array(64).fill(null)
   );
   const [selectedSquare, setSelectedSquare] = useState<number | null>(null);
   const [possibleMoves, setPossibleMoves] = useState<ChessSquare[]>([]);
-  const [turn, setTurn] = useState<"w" | "b">("w");
   const [shake, setShake] = useState(false);
   const [capturedWhitePieces, setCapturedWhitePieces] = useState<string[]>([]);
   const [capturedBlackPieces, setCapturedBlackPieces] = useState<string[]>([]);
+  const [gameId, setGameId] = useState<string | null>(null);
+  const [playerColor, setPlayerColor] = useState<"w" | "b" | null>(null);
+  const [isValidGame, setIsValidGame] = useState(false);
+  const isWhitePlayer = playerColor == "w";
 
-  const handleShakeScreen = useCallback(() => {
-    setShake(true);
-    setTimeout(() => setShake(false), 1000);
-  }, []);
+  useEffect(() => {
+    if (socket) {
+      if (compInviteCode) {
+        socket.emit("joinGame", inviteCode);
+        setCompInviteCode("");
+      } else if (compGameCode) {
+        socket.emit("createGame", gameCode);
+        setCompGameCode("");
+      }
+    }
+  }, [inviteCode, gameCode, socket]);
 
-  const updateBoard = useCallback(() => {
+  const updateBoard = useCallback((chessInstance: Chess) => {
     const newSquares = Array(64).fill(null);
-    chess.board().forEach((row, rowIndex) => {
+    chessInstance.board().forEach((row, rowIndex) => {
       row.forEach((piece, colIndex) => {
         if (piece) {
           const pieceSymbol =
@@ -87,7 +117,62 @@ const Chessboard: React.FC = () => {
       });
     });
     setSquares(newSquares);
-  }, [chess]);
+  }, []);
+
+  const handleShakeScreen = useCallback(() => {
+    setShake(true);
+    setTimeout(() => setShake(false), 1000);
+  }, []);
+
+  useEffect(() => {
+    if (socket) {
+      socket.on("gameCreated", (game: any) => {
+        setGameId(game.id);
+        const newChess = new Chess(game.chess);
+        setChess(newChess);
+        updateBoard(newChess);
+        const player = game.players.find(
+          (player: any) => player.id === socket.id
+        );
+        setPlayerColor(player.color);
+        setIsValidGame(true);
+      });
+
+      socket.on("playerJoined", (game: any) => {
+        setGameId(game.id);
+        const newChess = new Chess(game.chess);
+        setChess(newChess);
+        updateBoard(newChess);
+        const player = game.players.find(
+          (player: any) => player.id === socket.id
+        );
+        setPlayerColor(player.color);
+        setIsValidGame(true);
+      });
+
+      socket.on("moveMade", (game: any) => {
+        const newChess = new Chess(game.chess);
+        setChess(newChess);
+        updateBoard(newChess);
+        setCapturedWhitePieces(game.capturedWhitePieces);
+        setCapturedBlackPieces(game.capturedBlackPieces);
+      });
+
+      socket.on("error", (message) => {
+        handleShakeScreen();
+        setSnackbarMessage(message?.errorMessage);
+        setTimeout(() => {
+          if (
+            message?.errorType == "GAME_EXISTS" ||
+            message?.errorType == "GAME_NOT_FOUND" ||
+            message?.errorType == "LOBBY_FULL"
+          ) {
+            router.push("/");
+          }
+        }, 3000);
+      });
+    }
+  }, [socket, updateBoard, handleShakeScreen]);
 
   const handleSquareSelection = (index: number) => {
     const fromSquare = indexToSquare(index);
@@ -108,149 +193,231 @@ const Chessboard: React.FC = () => {
   const handleMove = (index: number) => {
     const from = indexToSquare(selectedSquare!);
     const to = indexToSquare(index);
-    try {
-      const move = chess.move({ from, to });
-      if (move) {
-        if (move.captured) {
-          if (move.color === "w") {
-            setCapturedBlackPieces((prev) => [...prev, move.captured!]);
-          } else {
-            setCapturedWhitePieces((prev) => [...prev, move.captured!]);
-          }
-        }
-        setTurn(chess.turn());
-        updateBoard();
+    const move = { from, to };
+    socket?.emit("makeMove", { gameId, move });
+    setPossibleMoves([]);
+    setSelectedSquare(null);
+  };
+
+  const handleSquareClick = (index: number) => {
+    const fromSquare = indexToSquare(index);
+    const piece = chess.get(fromSquare);
+
+    if (selectedSquare === null) {
+      // First selection, must select a piece of the current player's turn
+      if (
+        piece &&
+        piece.color === chess.turn() &&
+        piece.color === playerColor
+      ) {
+        handleSquareSelection(index);
+      } else {
+        handleShakeScreen();
+        if (chess.turn() != playerColor) {
+          setSnackbarMessage("Not your turn!");
+        } else if (!piece) setSnackbarMessage("Select a piece!");
+        else if (piece.color !== playerColor)
+          setSnackbarMessage("Not your piece!");
       }
-    } catch {
-      handleShakeScreen();
-      setSnackbarMessage("Not a valid move!");
-    } finally {
-      setSelectedSquare(null);
-      setPossibleMoves([]);
+    } else {
+      // If selecting another piece of the current player's color
+      if (
+        piece &&
+        piece.color === chess.turn() &&
+        piece.color === playerColor
+      ) {
+        handleSquareSelection(index);
+        return;
+      }
+      // Second selection, must be a valid move
+      handleMove(index);
     }
   };
 
-  const handleSquareClick = useCallback(
-    (index: number) => {
-      const fromSquare = indexToSquare(index);
-      const piece = chess.get(fromSquare);
-
-      if (selectedSquare === null) {
-        // First selection, must select a piece of the current player's turn
-        if (piece && piece.color === chess.turn()) {
-          handleSquareSelection(index);
-        } else {
-          handleShakeScreen();
-          setSnackbarMessage("Select a valid piece!");
-        }
-      } else {
-        // If selecting another piece of the current player's color
-        if (piece && piece.color === chess.turn()) {
-          handleSquareSelection(index);
-          return;
-        }
-        // Second selection, must be a valid move
-        const move = { from: indexToSquare(selectedSquare), to: fromSquare };
-        const legalMoves = chess
-          .moves({ square: move.from, verbose: true })
-          .map((m) => m.to);
-        if (legalMoves.includes(fromSquare)) {
-          handleMove(index);
-        } else {
-          handleShakeScreen();
-          setSnackbarMessage("Not a valid move!");
-        }
-      }
-    },
-    [chess, selectedSquare, updateBoard, handleShakeScreen]
-  );
-
   useEffect(() => {
-    updateBoard();
-  }, [updateBoard]);
+    updateBoard(chess);
+  }, [updateBoard, chess]);
 
   const handleCloseSnackbar = () => setSnackbarMessage("");
 
-  return (
-    <Box
-      sx={{
-        display: "flex",
-        justifyContent: "center",
-      }}
-    >
-      <Box className={styles.boardContainer}>
-        {/* The white player box */}
-        <Box
-          sx={{
-            position: "absolute",
-            top: "10%",
-            left: "0",
-            transform: "translateX(-100%)",
-          }}
-        >
-          <PlayerComp
-            isActive={false}
-            alignDirection={"right"}
-            title="Sanjay Meena"
-            rank={"Master"}
-            pieces={[
-              ...capturedBlackPieces.map(
-                (piece) => pieceImages[piece.toUpperCase()]
-              ),
-            ]}
-          />
-        </Box>
+  const handleCopyCode = () => {
+    navigator.clipboard.writeText(gameCode);
+  };
 
-        {/* The black player box */}
+  const doesPossibleMoveCutsPiece = (index: number) => {
+    const fromSquare = indexToSquare(index);
+    const piece = chess.get(fromSquare);
+
+    return piece && possibleMoves.includes(fromSquare);
+  };
+
+  // Loading the game
+  if (!isValidGame)
+    return (
+      <>
+        <Backdrop
+          sx={{ color: "#fff", zIndex: (theme) => theme.zIndex.drawer + 1 }}
+          open={true}
+        >
+          <CircularProgress color="inherit" />
+        </Backdrop>
+        <Snackbar
+          open={!!snackbarMessage}
+          autoHideDuration={3000}
+          onClose={handleCloseSnackbar}
+          anchorOrigin={{ vertical: "top", horizontal: "center" }}
+        >
+          <Alert
+            onClose={handleCloseSnackbar}
+            severity="error"
+            variant="filled"
+            sx={{ width: "100%" }}
+          >
+            {snackbarMessage}
+          </Alert>
+        </Snackbar>
+      </>
+    );
+
+  return (
+    <>
+      {gameCode ? (
         <Box
           sx={{
-            position: "absolute",
-            bottom: "10%",
-            right: "0",
-            transform: "translateX(100%)",
+            display: "flex",
+            justifyContent: "center",
+            marginTop: "5%",
+            py: 1,
+            px: 3,
+            backgroundColor: "#FF5C00",
           }}
         >
-          <PlayerComp
-            isActive={true}
-            alignDirection={"left"}
-            title="Parikshit Singh"
-            rank={"Junior"}
-            pieces={[
-              ...capturedWhitePieces.map(
-                (piece) => pieceImages[piece.toLowerCase()]
-              ),
-            ]}
-          />
+          <Typography
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "Center",
+              columnGap: "12px",
+            }}
+          >
+            Invite you friend using this code - {gameCode}
+            <ContentCopy
+              onClick={handleCopyCode}
+              style={{ cursor: "pointer" }}
+              fontSize="small"
+            />
+          </Typography>
         </Box>
-        <Box className={`${styles.board} ${shake ? styles.shake : ""}`}>
-          {shake && <Box className={styles.errorBox} />}
-          {squares.map((piece, index) => (
-            <Box
-              key={index}
-              className={`${styles.square} ${
-                (Math.floor(index / 8) + (index % 8)) % 2 === 0
-                  ? styles.white
-                  : styles.black
-              } ${getBorderRadiusClass(index)}`}
-              onClick={() => handleSquareClick(index)}
-              sx={{
-                backgroundColor:
-                  selectedSquare === index ? "#FF5C00 !important" : "inherit",
-              }}
-            >
-              {piece && (
-                <Image
-                  src={pieceImages[piece]}
-                  alt={piece}
-                  className={styles.piece}
-                />
-              )}
-              {possibleMoves.includes(indexToSquare(index)) && (
-                <Box className={styles.possibleMove} />
-              )}
-            </Box>
-          ))}
+      ) : null}
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+        }}
+      >
+        <Box className={styles.boardContainer}>
+          {/* The white player box */}
+          <Box
+            sx={{
+              position: "absolute",
+              top: "10%",
+              left: "0",
+              transform: "translateX(-100%)",
+            }}
+          >
+            <PlayerComp
+              isActive={chess.turn() == "b"}
+              alignDirection={"right"}
+              title="Sanjay Meena"
+              rank={"Master"}
+              pieces={[
+                ...capturedBlackPieces.map(
+                  (piece) => pieceImages[piece.toUpperCase()]
+                ),
+              ]}
+            />
+          </Box>
+
+          {/* The black player box */}
+          <Box
+            sx={{
+              position: "absolute",
+              bottom: "10%",
+              right: "0",
+              transform: "translateX(100%)",
+            }}
+          >
+            <PlayerComp
+              isActive={chess.turn() == "w"}
+              alignDirection={"left"}
+              title="Parikshit Singh"
+              rank={"Junior"}
+              pieces={[
+                ...capturedWhitePieces.map(
+                  (piece) => pieceImages[piece.toLowerCase()]
+                ),
+              ]}
+            />
+          </Box>
+          <Box
+            className={`${styles.board} ${shake ? styles.shake : ""}`}
+            style={{
+              transform: isWhitePlayer ? "rotate(0deg)" : "rotate(180deg)",
+            }}
+          >
+            {shake && <Box className={styles.errorBox} />}
+            {squares.map((piece, index) => (
+              <Box
+                key={index}
+                className={`${styles.square} ${
+                  (Math.floor(index / 8) + (index % 8)) % 2 === 0
+                    ? styles.white
+                    : styles.black
+                } ${getBorderRadiusClass(index, isWhitePlayer)}`}
+                onClick={() => handleSquareClick(index)}
+                sx={{
+                  backgroundColor:
+                    selectedSquare === index ? "#FF5C00 !important" : "inherit",
+                }}
+                style={{
+                  transform: isWhitePlayer ? "rotate(0deg)" : "rotate(180deg)",
+                }}
+              >
+                {piece && (
+                  <Image
+                    src={pieceImages[piece]}
+                    alt={piece}
+                    className={styles.piece}
+                  />
+                )}
+                {possibleMoves.includes(indexToSquare(index)) && (
+                  <Box
+                    className={`${styles.possibleMove} ${
+                      doesPossibleMoveCutsPiece(index) &&
+                      styles.possibleMoveCanCut
+                    }`}
+                  />
+                )}
+              </Box>
+            ))}
+          </Box>
         </Box>
+      </Box>
+      <Box
+        sx={{
+          mt: 5,
+          padding: "10px 20px",
+          backgroundColor: playerColor == "w" ? "black" : "white",
+          color: playerColor == "w" ? "white" : "black",
+          textAlign: "center",
+        }}
+      >
+        <Typography variant="h6">
+          Who&apos;s Turn? {chess.turn() == "w" ? "White" : "Black"}
+        </Typography>
+        <Typography variant="h3">
+          You are {playerColor == "w" ? "White Player" : "Black Player"}
+        </Typography>
       </Box>
       <Snackbar
         open={!!snackbarMessage}
@@ -267,7 +434,7 @@ const Chessboard: React.FC = () => {
           {snackbarMessage}
         </Alert>
       </Snackbar>
-    </Box>
+    </>
   );
 };
 
