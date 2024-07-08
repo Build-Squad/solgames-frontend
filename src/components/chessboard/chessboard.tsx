@@ -280,13 +280,17 @@ const Chessboard: React.FC = () => {
     );
 
   return (
-    <>
+    <Box
+      sx={{
+        height: "fit-content",
+        width: "100%",
+      }}
+    >
       {gameCode ? (
         <Box
           sx={{
             display: "flex",
             justifyContent: "center",
-            marginTop: "5%",
             py: 1,
             px: 3,
             backgroundColor: "#FF5C00",
@@ -316,53 +320,101 @@ const Chessboard: React.FC = () => {
         }}
       >
         <Box className={styles.boardContainer}>
-          {/* The white player box */}
-          <Box
-            sx={{
-              position: "absolute",
-              top: "10%",
-              left: "0",
-              transform: "translateX(-100%)",
-            }}
-          >
-            <PlayerComp
-              isActive={chess.turn() == "b"}
-              alignDirection={"right"}
-              title="Sanjay Meena"
-              rank={"Master"}
-              pieces={[
-                ...capturedBlackPieces.map(
-                  (piece) => pieceImages[piece.toUpperCase()]
-                ),
-              ]}
-            />
-          </Box>
+          {/* The player box */}
 
-          {/* The black player box */}
-          <Box
-            sx={{
-              position: "absolute",
-              bottom: "10%",
-              right: "0",
-              transform: "translateX(100%)",
-            }}
-          >
-            <PlayerComp
-              isActive={chess.turn() == "w"}
-              alignDirection={"left"}
-              title="Parikshit Singh"
-              rank={"Junior"}
-              pieces={[
-                ...capturedWhitePieces.map(
-                  (piece) => pieceImages[piece.toLowerCase()]
-                ),
-              ]}
-            />
-          </Box>
+          {/* The player box */}
+          {isWhitePlayer ? (
+            <>
+              <Box
+                sx={{
+                  position: "absolute",
+                  top: "10%",
+                  left: "0",
+                  transform: "translateX(-100%)",
+                }}
+              >
+                <PlayerComp
+                  isActive={chess.turn() == "b"}
+                  alignDirection={"right"}
+                  title="Sanjay Meena"
+                  rank={"Master"}
+                  pieces={[
+                    ...capturedBlackPieces.map(
+                      (piece) => pieceImages[piece.toUpperCase()]
+                    ),
+                  ]}
+                />
+              </Box>
+              <Box
+                sx={{
+                  position: "absolute",
+                  bottom: "10%",
+                  right: "0",
+                  transform: "translateX(100%)",
+                }}
+              >
+                <PlayerComp
+                  isActive={chess.turn() == "w"}
+                  alignDirection={"left"}
+                  title="Parikshit Singh"
+                  rank={"Junior"}
+                  pieces={[
+                    ...capturedWhitePieces.map(
+                      (piece) => pieceImages[piece.toLowerCase()]
+                    ),
+                  ]}
+                />
+              </Box>
+            </>
+          ) : (
+            <>
+              <Box
+                sx={{
+                  position: "absolute",
+                  top: "10%",
+                  left: "0",
+                  transform: "translateX(-100%)",
+                }}
+              >
+                <PlayerComp
+                  isActive={chess.turn() == "w"}
+                  alignDirection={"right"}
+                  title="Parikshit Singh"
+                  rank={"Junior"}
+                  pieces={[
+                    ...capturedWhitePieces.map(
+                      (piece) => pieceImages[piece.toLowerCase()]
+                    ),
+                  ]}
+                />
+              </Box>
+              <Box
+                sx={{
+                  position: "absolute",
+                  bottom: "10%",
+                  right: "0",
+                  transform: "translateX(100%)",
+                }}
+              >
+                <PlayerComp
+                  isActive={chess.turn() == "b"}
+                  alignDirection={"left"}
+                  title="Sanjay Meena"
+                  rank={"Master"}
+                  pieces={[
+                    ...capturedBlackPieces.map(
+                      (piece) => pieceImages[piece.toUpperCase()]
+                    ),
+                  ]}
+                />
+              </Box>
+            </>
+          )}
+
           <Box
             className={`${styles.board} ${shake ? styles.shake : ""}`}
             style={{
-              transform: isWhitePlayer ? "rotate(0deg)" : "rotate(180deg)",
+              transform: isWhitePlayer ? "none" : "rotate(180deg)",
             }}
           >
             {shake && <Box className={styles.errorBox} />}
@@ -380,7 +432,7 @@ const Chessboard: React.FC = () => {
                     selectedSquare === index ? "#FF5C00 !important" : "inherit",
                 }}
                 style={{
-                  transform: isWhitePlayer ? "rotate(0deg)" : "rotate(180deg)",
+                  transform: isWhitePlayer ? "none" : "rotate(180deg)",
                 }}
               >
                 {piece && (
@@ -434,7 +486,7 @@ const Chessboard: React.FC = () => {
           {snackbarMessage}
         </Alert>
       </Snackbar>
-    </>
+    </Box>
   );
 };
 
