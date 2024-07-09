@@ -1,0 +1,40 @@
+.congrats-dialog-paper {
+    min-height: 60vh;
+    background-color: #f9f9f9;
+    border-radius: 15px;
+    padding: 20px;
+}
+
+.congrats-title {
+    font-size: 2.5rem;
+    font-weight: bold;
+    text-align: center;
+    color: #4caf50;
+    margin-bottom: 20px;
+}
+
+.congrats-content {
+    font-size: 1.2rem;
+    text-align: center;
+    color: #555;
+    margin-top: 20px;
+}
+
+.congrats-trophy {
+    width: 100px;
+    height: auto;
+    display: block;
+    margin: 0 auto 20px auto;
+}
+
+.congrats-button {
+    background-color: #4caf50;
+    color: #fff;
+    font-weight: bold;
+    width: 100%;
+    margin: 10px;
+}
+
+.congrats-button:hover {
+    background-color: #45a049;
+}
