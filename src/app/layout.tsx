@@ -1,10 +1,9 @@
-
-
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import Navbar from "../components/navbar/navbar";
 import "./globals.css";
 import { SocketProvider } from "@/context/socketContext";
+import { Web3AuthProvider } from "@/context/web3AuthProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -21,10 +20,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <SocketProvider>
-          <Navbar />
-          {children}
-        </SocketProvider>
+        <Web3AuthProvider>
+          <SocketProvider>
+            <Navbar />
+            {children}
+          </SocketProvider>
+        </Web3AuthProvider>
       </body>
     </html>
   );
