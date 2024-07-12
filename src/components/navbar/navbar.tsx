@@ -109,6 +109,11 @@ const DrawerAppBar = () => {
             {loggedIn
               ? renderNavButtons(navLoggedInItems)
               : renderNavButtons(navLoggedOutItems)}
+            {loggedIn ? (
+              <Button onClick={() => router.push("/profile")} sx={{ color: "#757575" }}>
+                Profile
+              </Button>
+            ) : null}
             <Button
               variant="outlined"
               sx={{
