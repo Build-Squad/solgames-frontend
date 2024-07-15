@@ -7,18 +7,22 @@ import React, {
   useState,
 } from "react";
 import { CHAIN_NAMESPACES, IProvider, WEB3AUTH_NETWORK } from "@web3auth/base";
-import { SolanaPrivateKeyProvider } from "@web3auth/solana-provider";
+import {
+  SolanaPrivateKeyProvider,
+  SolanaWallet,
+} from "@web3auth/solana-provider";
 import { OpenloginAdapter } from "@web3auth/openlogin-adapter";
 import { Web3Auth } from "@web3auth/modal";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { useSnackbar } from "./snackbarContext";
+import axios from "axios";
 
 const clientId =
   "BIaVlcUD-SUS5jlLfPG-V9Bj_EsI19Z31-HitBrMEhWDnOb-jEqKuwtq4W6mTymgwMQhhM5E9RbunQKkYAqnlSc";
 
 const chainConfig = {
   chainNamespace: CHAIN_NAMESPACES.SOLANA,
-  chainId: "1",
+  chainId: "0x3",
 
   // RPC client api endpoint to query or interact with the database
   rpcTarget: "https://api.devnet.solana.com",
@@ -32,14 +36,13 @@ const privateKeyProvider = new SolanaPrivateKeyProvider({
   config: { chainConfig },
 });
 
-const openloginAdapter = new OpenloginAdapter({ privateKeyProvider });
-
 // Configure web3auth
 const web3auth = new Web3Auth({
   clientId,
   web3AuthNetwork: WEB3AUTH_NETWORK.SAPPHIRE_DEVNET,
   privateKeyProvider,
 });
+const openloginAdapter = new OpenloginAdapter({ privateKeyProvider });
 web3auth.configureAdapter(openloginAdapter);
 
 interface Web3AuthContextProps {
@@ -91,7 +94,10 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
       setProvider(web3authProvider);
       if (web3auth.connected) {
         setLoggedIn(true);
-        showMessage("Successfully connected!", "success");
+
+        const userInfo = await getUserInfo();
+        const publicKey = await getAccounts();
+        await createUser({ userInfo, publicKey });
       }
     } catch (e) {
       console.log(e);
@@ -99,9 +105,37 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
     }
   };
 
-  const getUserInfo = async () => {
-    const user = await web3auth.getUserInfo();
-    return user;
+  const createUser = async ({ userInfo, publicKey }) => {
+    const {
+      email,
+      name,
+      profileImage,
+      typeOfLogin,
+      verifier,
+      verifierId,
+      aggregateVerifier,
+      isMfaEnabled,
+      idToken,
+    } = userInfo;
+    try {
+      await axios.post(`${process.env.NEXT_PUBLIC_BACKEND}/user`, {
+        email,
+        name,
+        profileImage,
+        typeOfLogin,
+        verifier,
+        verifierId,
+        aggregateVerifier,
+        isMfaEnabled,
+        idToken,
+        publicKey,
+      });
+
+      showMessage("User information stored successfully!", "success");
+    } catch (e) {
+      console.log(e);
+      showMessage("Error connecting!", "error");
+    }
   };
 
   const logout = async () => {
@@ -111,22 +145,33 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
     showMessage("Logged out!", "success");
   };
 
+  const getUserInfo = async () => {
+    const user = await web3auth.getUserInfo();
+    return user;
+  };
+
   const getAccounts = async () => {
-    if (!provider) {
-      return "provider not initialized yet";
-    }
-    const accounts = await provider.request({ method: "solana_accounts" });
+    const solanaWallet = new SolanaWallet(provider);
+    // Get user's Solana public address
+    const accounts = await solanaWallet.requestAccounts();
     return accounts[0];
   };
 
+  //Assuming user is already logged in.
+  const getPrivateKey = async () => {
+    const privateKey = await web3auth.provider.request({
+      method: "solanaPrivateKey",
+    });
+  };
+
   const getBalance = async () => {
-    if (!provider) {
-      return "provider not initialized yet";
-    }
+    const solanaWallet = new SolanaWallet(provider);
+    const accounts = await solanaWallet.requestAccounts();
+
     const connection = new Connection(chainConfig.rpcTarget);
-    const accounts = await provider.request({ method: "solana_accounts" });
-    const publicKey = new PublicKey(accounts[0]);
-    const balance = await connection.getBalance(publicKey);
+
+    // Fetch the balance for the specified public key
+    const balance = await connection.getBalance(new PublicKey(accounts[0]));
     return (balance / 1e9).toString(); // Convert lamports to SOL
   };
 
@@ -134,14 +179,10 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
     if (!provider) {
       return "provider not initialized yet";
     }
-    const accounts = await provider.request({ method: "solana_accounts" });
-    const signedMessage = await provider.request({
-      method: "solana_signMessage",
-      params: {
-        pubkey: accounts[0],
-        message,
-      },
-    });
+    const solanaWallet = new SolanaWallet(provider);
+
+    const msg = Buffer.from(message, "utf8");
+    await solanaWallet.signMessage(msg);
     return;
   };
 

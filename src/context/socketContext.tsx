@@ -19,7 +19,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
   const [socket, setSocket] = useState<Socket | null>(null);
 
   useEffect(() => {
-    const newSocket = io("http://localhost:3000");
+    const newSocket = io(process.env.NEXT_PUBLIC_BACKEND);
     setSocket(newSocket);
 
     return () => {
