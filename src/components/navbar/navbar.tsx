@@ -15,16 +15,37 @@ import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import { useRouter } from "next/navigation";
+import { useWeb3Auth } from "@/context/web3AuthProvider";
 
 const drawerWidth = 240;
-const navItems = ["Play", "Puzzles", "Learn", "Watch", "Community"];
+const navLoggedInItems = ["Home", "Ranking", "Games"];
+const navLoggedOutItems = ["Play", "Puzzles", "Learn", "Watch", "Community"];
 
-export default function DrawerAppBar() {
+const DrawerAppBar = () => {
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = React.useState(false);
+  const { login, loggedIn, logout } = useWeb3Auth();
 
   const handleDrawerToggle = () => {
     setMobileOpen((prevState) => !prevState);
+  };
+
+  const renderDrawerItems = (items: string[]) => {
+    return items.map((item) => (
+      <ListItem key={item} disablePadding>
+        <ListItemButton sx={{ textAlign: "center" }}>
+          <ListItemText primary={item} />
+        </ListItemButton>
+      </ListItem>
+    ));
+  };
+
+  const renderNavButtons = (items: string[]) => {
+    return items.map((item) => (
+      <Button key={item} sx={{ color: "#757575" }}>
+        {item}
+      </Button>
+    ));
   };
 
   const drawer = (
@@ -34,18 +55,13 @@ export default function DrawerAppBar() {
       </Typography>
       <Divider />
       <List>
-        {navItems.map((item) => (
-          <ListItem key={item} disablePadding>
-            <ListItemButton sx={{ textAlign: "center" }}>
-              <ListItemText primary={item} />
-            </ListItemButton>
-          </ListItem>
-        ))}
+        {loggedIn
+          ? renderDrawerItems(navLoggedInItems)
+          : renderDrawerItems(navLoggedOutItems)}
       </List>
     </Box>
   );
 
-  // Only access window object on the client side
   const container = React.useMemo(
     () =>
       typeof window !== "undefined" ? () => window.document.body : undefined,
@@ -89,17 +105,15 @@ export default function DrawerAppBar() {
           >
             CHESSMATE
           </Typography>
-          <Box
-            sx={{
-              display: "flex",
-              columnGap: "8px",
-            }}
-          >
-            {navItems.map((item) => (
-              <Button key={item} sx={{ color: "#757575" }}>
-                {item}
+          <Box sx={{ display: "flex", columnGap: "8px" }}>
+            {loggedIn
+              ? renderNavButtons(navLoggedInItems)
+              : renderNavButtons(navLoggedOutItems)}
+            {loggedIn ? (
+              <Button onClick={() => router.push("/profile")} sx={{ color: "#757575" }}>
+                Profile
               </Button>
-            ))}
+            ) : null}
             <Button
               variant="outlined"
               sx={{
@@ -109,8 +123,9 @@ export default function DrawerAppBar() {
                 px: 4,
                 fontWeight: "bold",
               }}
+              onClick={loggedIn ? logout : login}
             >
-              Login / Signup
+              {loggedIn ? "Logout" : "Login / Signup"}
             </Button>
           </Box>
         </Toolbar>
@@ -122,7 +137,7 @@ export default function DrawerAppBar() {
           open={mobileOpen}
           onClose={handleDrawerToggle}
           ModalProps={{
-            keepMounted: true, // Better open performance on mobile.
+            keepMounted: true,
           }}
           sx={{
             display: { xs: "block", sm: "none" },
@@ -137,4 +152,6 @@ export default function DrawerAppBar() {
       </nav>
     </Box>
   );
-}
+};
+
+export default DrawerAppBar;

@@ -18,6 +18,7 @@ import Spline from "@splinetool/react-spline";
 import { useState, forwardRef, ChangeEvent } from "react";
 import { TransitionProps } from "@mui/material/transitions";
 import { generateInviteCode } from "@/utils/helper";
+import { useWeb3Auth } from "@/context/web3AuthProvider";
 
 const questrial = Questrial({
   weight: "400",
@@ -37,6 +38,7 @@ export default function Home() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [inviteCode, setInviteCode] = useState("");
+  const { loggedIn } = useWeb3Auth();
 
   const handleClose = () => setOpen(false);
 
@@ -114,58 +116,62 @@ export default function Home() {
           World’s No. #1 decentralized chess game to stake crypto to play chess
           with friends and the winner takes all.
         </Typography>
-        <Box display={"flex"} columnGap={"20px"}>
-          <Button
-            variant="contained"
-            sx={{
-              color: "black",
-              backgroundColor: "#FF5C00",
-              mt: 4,
-              px: 5,
-              py: 1.5,
-              fontWeight: "bold",
-              transition: "transform .1s",
-              ":hover": {
-                backgroundColor: "#FF5C00",
-                transform: "rotate(-10deg)",
-              },
-            }}
-            onClick={createGame}
-          >
-            Create A Game
-          </Button>
-          <Button
-            variant="contained"
-            sx={{
-              color: "black",
-              backgroundColor: "#FF5C00",
-              mt: 4,
-              px: 5,
-              py: 1.5,
-              fontWeight: "bold",
-              transition: "transform .1s",
-              ":hover": {
-                backgroundColor: "#FF5C00",
-                transform: "rotate(-10deg)",
-              },
-            }}
-            onClick={() => {
-              setOpen(true);
-            }}
-          >
-            Join A Game
-          </Button>
-        </Box>
-        <Button
-          sx={{
-            color: "#FF5C00",
-            mt: 2,
-            px: 5,
-            py: 1.5,
-          }}
-        >
-          Play with computer
-        </Button>
+        {loggedIn ? (
+          <>
+            <Box display={"flex"} columnGap={"20px"}>
+              <Button
+                variant="contained"
+                sx={{
+                  color: "black",
+                  backgroundColor: "#FF5C00",
+                  mt: 4,
+                  px: 5,
+                  py: 1.5,
+                  fontWeight: "bold",
+                  transition: "transform .1s",
+                  ":hover": {
+                    backgroundColor: "#FF5C00",
+                    transform: "rotate(-10deg)",
+                  },
+                }}
+                onClick={createGame}
+              >
+                Create A Game
+              </Button>
+              <Button
+                variant="contained"
+                sx={{
+                  color: "black",
+                  backgroundColor: "#FF5C00",
+                  mt: 4,
+                  px: 5,
+                  py: 1.5,
+                  fontWeight: "bold",
+                  transition: "transform .1s",
+                  ":hover": {
+                    backgroundColor: "#FF5C00",
+                    transform: "rotate(-10deg)",
+                  },
+                }}
+                onClick={() => {
+                  setOpen(true);
+                }}
+              >
+                Join A Game
+              </Button>
+            </Box>
+            <Button
+              sx={{
+                color: "#FF5C00",
+                mt: 2,
+                px: 5,
+                py: 1.5,
+              }}
+            >
+              Play with computer
+            </Button>
+          </>
+        ) : null}
       </Box>
       <Dialog
         open={open}

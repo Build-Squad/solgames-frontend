@@ -28,6 +28,7 @@ import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 import { useSocket } from "@/context/socketContext";
 import { ContentCopy } from "@mui/icons-material";
+import FinalModal from "../finalModal";
 
 // White small letter, Black big letter
 const pieceImages: { [key: string]: string } = {
@@ -90,6 +91,7 @@ const Chessboard: React.FC = () => {
   const [playerColor, setPlayerColor] = useState<"w" | "b" | null>(null);
   const [isValidGame, setIsValidGame] = useState(false);
   const isWhitePlayer = playerColor == "w";
+  const [openFinalModal, setOpenFinalModal] = useState(false);
 
   useEffect(() => {
     if (socket) {
@@ -159,17 +161,28 @@ const Chessboard: React.FC = () => {
       });
 
       socket.on("error", (message) => {
+        // Game completion errors
+        if (message?.errorType == "GAME_OVER") {
+          setOpenFinalModal(true);
+          return;
+        }
+        if (message?.errorType == "GAME_DRAW") {
+          alert("GAME DRAW")
+          return;
+        }
         handleShakeScreen();
         setSnackbarMessage(message?.errorMessage);
-        setTimeout(() => {
-          if (
-            message?.errorType == "GAME_EXISTS" ||
-            message?.errorType == "GAME_NOT_FOUND" ||
-            message?.errorType == "LOBBY_FULL"
-          ) {
+
+        // Error while connecting to a game
+        if (
+          message?.errorType == "GAME_EXISTS" ||
+          message?.errorType == "GAME_NOT_FOUND" ||
+          message?.errorType == "LOBBY_FULL"
+        ) {
+          setTimeout(() => {
             router.push("/");
-          }
-        }, 3000);
+          }, 3000);
+        }
       });
     }
   }, [socket, updateBoard, handleShakeScreen]);
@@ -486,6 +499,12 @@ const Chessboard: React.FC = () => {
           {snackbarMessage}
         </Alert>
       </Snackbar>
+      {openFinalModal && (
+        <FinalModal
+          handleClose={() => null}
+          playerName={`${playerColor}-player`}
+        />
+      )}
     </Box>
   );
 };
