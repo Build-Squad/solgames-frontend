@@ -16,6 +16,7 @@ import { Web3Auth } from "@web3auth/modal";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { useSnackbar } from "./snackbarContext";
 import { useConnectUser } from "@/hooks/api-hooks/useUsers";
+import { useAuth } from "./authContext";
 
 const clientId =
   "BIaVlcUD-SUS5jlLfPG-V9Bj_EsI19Z31-HitBrMEhWDnOb-jEqKuwtq4W6mTymgwMQhhM5E9RbunQKkYAqnlSc";
@@ -71,6 +72,7 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
   const [loggedIn, setLoggedIn] = useState(false);
   const { showMessage } = useSnackbar();
   const { connectionMutateAsync } = useConnectUser();
+  const { login: loginUser, logout: logoutUser } = useAuth();
 
   useEffect(() => {
     const init = async () => {
@@ -102,7 +104,7 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
       }
     } catch (e) {
       console.log(e);
-      logout()
+      logout();
       showMessage("Error connecting in!", "error");
     }
   };
@@ -134,6 +136,7 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
       };
 
       const res = await connectionMutateAsync(payload);
+      loginUser(res.data);
       showMessage(res.message, "success");
     } catch (e) {
       console.log(e);
@@ -146,6 +149,7 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
     await web3auth.logout();
     setProvider(null);
     setLoggedIn(false);
+    logoutUser();
     showMessage("Logged out!", "success");
   };
 

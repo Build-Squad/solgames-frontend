@@ -15,6 +15,7 @@ import { Questrial } from "next/font/google";
 import Image from "next/image";
 import solanaIcon from "../../../assets/solanaLogoMark.svg";
 import { useSnackbar } from "@/context/snackbarContext";
+import { useAuth } from "@/context/authContext";
 
 const questrial = Questrial({
   weight: "400",
@@ -49,6 +50,7 @@ const CreateGameModal = ({ handleClose }) => {
   });
   const [isDateTimeValid, setIsDateTimeValid] = useState(true);
   const { showMessage } = useSnackbar();
+  const { user } = useAuth();
 
   const validateDateTime = (selectedDate, selectedTime) => {
     const selectedDateTime = new Date(`${selectedDate}T${selectedTime}`);
@@ -93,7 +95,7 @@ const CreateGameModal = ({ handleClose }) => {
           color: "#fff",
           padding: "20px",
           borderRadius: "15px",
-          paddingBottom:"40px"
+          paddingBottom: "40px",
         },
       }}
     >
