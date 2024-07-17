@@ -16,6 +16,9 @@ import Image from "next/image";
 import solanaIcon from "../../../assets/solanaLogoMark.svg";
 import { useSnackbar } from "@/context/snackbarContext";
 import { useAuth } from "@/context/authContext";
+import { useCreateGame } from "@/hooks/api-hooks/useGames";
+import { useLoader } from "@/context/loaderContext";
+import { generateInviteCode } from "@/utils/helper";
 
 const questrial = Questrial({
   weight: "400",
@@ -51,6 +54,8 @@ const CreateGameModal = ({ handleClose }) => {
   const [isDateTimeValid, setIsDateTimeValid] = useState(true);
   const { showMessage } = useSnackbar();
   const { user } = useAuth();
+  const { createGameMutateAsync } = useCreateGame();
+  const { showLoader, hideLoader } = useLoader();
 
   const validateDateTime = (selectedDate, selectedTime) => {
     const selectedDateTime = new Date(`${selectedDate}T${selectedTime}`);
@@ -66,18 +71,20 @@ const CreateGameModal = ({ handleClose }) => {
     }
   };
 
-  const handleCreateGame = () => {
+  const handleCreateGame = async () => {
+    showLoader();
     if (validateDateTime(date, time)) {
-      console.log("Bet Amount:", betAmount);
-      console.log("Date:", date);
-      console.log("Time:", time);
-      handleClose();
+      await createGameMutateAsync({
+        betAmount: parseFloat(betAmount),
+        inviteCode: generateInviteCode(),
+        gameDateTime: `${date}T${time}:00`,
+        creatorId: user.id,
+      });
+      // handleClose();
     } else {
-      showMessage(
-        "Selected date and time must be at least 1 minute ahead of the current time.",
-        "error"
-      );
+      showMessage("Invalid input!", "error");
     }
+    hideLoader();
   };
 
   const currentDateTime = getCurrentDateTimeISO();

@@ -20,6 +20,7 @@ import { TransitionProps } from "@mui/material/transitions";
 import { generateInviteCode } from "@/utils/helper";
 import { useWeb3Auth } from "@/context/web3AuthProvider";
 import CreateGameModal from "@/components/modals/createGameModal";
+import { useAuth } from "@/context/authContext";
 
 const questrial = Questrial({
   weight: "400",
@@ -40,7 +41,7 @@ export default function Home() {
   const [open, setOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [inviteCode, setInviteCode] = useState("");
-  const { loggedIn } = useWeb3Auth();
+  const { user } = useAuth();
 
   const handleClose = () => setOpen(false);
 
@@ -118,7 +119,7 @@ export default function Home() {
           World’s No. #1 decentralized chess game to stake crypto to play chess
           with friends and the winner takes all.
         </Typography>
-        {loggedIn ? (
+        {!!(user?.id) ? (
           <>
             <Box display={"flex"} columnGap={"20px"}>
               <Button

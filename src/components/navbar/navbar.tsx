@@ -16,6 +16,7 @@ import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import { useRouter } from "next/navigation";
 import { useWeb3Auth } from "@/context/web3AuthProvider";
+import { useAuth } from "@/context/authContext";
 
 const drawerWidth = 240;
 const navLoggedInItems = ["Home", "Ranking", "Games"];
@@ -25,6 +26,7 @@ const DrawerAppBar = () => {
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const { login, loggedIn, logout } = useWeb3Auth();
+  const { user } = useAuth();
 
   const handleDrawerToggle = () => {
     setMobileOpen((prevState) => !prevState);
@@ -55,7 +57,7 @@ const DrawerAppBar = () => {
       </Typography>
       <Divider />
       <List>
-        {loggedIn
+        {!!(user?.id)
           ? renderDrawerItems(navLoggedInItems)
           : renderDrawerItems(navLoggedOutItems)}
       </List>
@@ -106,10 +108,10 @@ const DrawerAppBar = () => {
             CHESSMATE
           </Typography>
           <Box sx={{ display: "flex", columnGap: "8px" }}>
-            {loggedIn
+            {!!(user?.id)
               ? renderNavButtons(navLoggedInItems)
               : renderNavButtons(navLoggedOutItems)}
-            {loggedIn ? (
+            {!!(user?.id) ? (
               <Button
                 onClick={() => router.push("/profile")}
                 sx={{ color: "#757575" }}
@@ -126,9 +128,9 @@ const DrawerAppBar = () => {
                 px: 4,
                 fontWeight: "bold",
               }}
-              onClick={loggedIn ? logout : login}
+              onClick={!!(user?.id) ? logout : login}
             >
-              {loggedIn ? "Logout" : "Connect"}
+              {!!(user?.id) ? "Logout" : "Connect"}
             </Button>
           </Box>
         </Toolbar>
