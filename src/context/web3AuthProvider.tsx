@@ -16,6 +16,7 @@ import { Web3Auth } from "@web3auth/modal";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { useSnackbar } from "./snackbarContext";
 import axios from "axios";
+import { useConnectUser } from "@/hooks/api-hooks/useUsers";
 
 const clientId =
   "BIaVlcUD-SUS5jlLfPG-V9Bj_EsI19Z31-HitBrMEhWDnOb-jEqKuwtq4W6mTymgwMQhhM5E9RbunQKkYAqnlSc";
@@ -70,6 +71,7 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
   const [provider, setProvider] = useState<IProvider | null>(null);
   const [loggedIn, setLoggedIn] = useState(false);
   const { showMessage } = useSnackbar();
+  const { connectionMutateAsync } = useConnectUser();
 
   useEffect(() => {
     const init = async () => {
@@ -118,7 +120,7 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
       idToken,
     } = userInfo;
     try {
-      await axios.post(`${process.env.NEXT_PUBLIC_BACKEND}/user`, {
+      const payload = {
         email,
         name,
         profileImage,
@@ -129,11 +131,13 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
         isMfaEnabled,
         idToken,
         publicKey,
-      });
+      };
 
-      showMessage("User information stored successfully!", "success");
+      const res = await connectionMutateAsync(payload);
+      showMessage(res.message, "success");
     } catch (e) {
       console.log(e);
+      logout();
       showMessage("Error connecting!", "error");
     }
   };

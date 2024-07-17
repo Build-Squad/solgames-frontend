@@ -110,7 +110,10 @@ const DrawerAppBar = () => {
               ? renderNavButtons(navLoggedInItems)
               : renderNavButtons(navLoggedOutItems)}
             {loggedIn ? (
-              <Button onClick={() => router.push("/profile")} sx={{ color: "#757575" }}>
+              <Button
+                onClick={() => router.push("/profile")}
+                sx={{ color: "#757575" }}
+              >
                 Profile
               </Button>
             ) : null}
@@ -125,7 +128,7 @@ const DrawerAppBar = () => {
               }}
               onClick={loggedIn ? logout : login}
             >
-              {loggedIn ? "Logout" : "Login / Signup"}
+              {loggedIn ? "Logout" : "Connect"}
             </Button>
           </Box>
         </Toolbar>
