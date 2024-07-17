@@ -15,7 +15,6 @@ import { OpenloginAdapter } from "@web3auth/openlogin-adapter";
 import { Web3Auth } from "@web3auth/modal";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { useSnackbar } from "./snackbarContext";
-import axios from "axios";
 import { useConnectUser } from "@/hooks/api-hooks/useUsers";
 
 const clientId =
@@ -52,7 +51,7 @@ interface Web3AuthContextProps {
   login: () => Promise<void>;
   logout: () => Promise<void>;
   getUserInfo: () => Promise<any>;
-  getAccounts: () => Promise<string[] | string>;
+  getAccounts: (provider: IProvider) => Promise<string[] | string>;
   getBalance: () => Promise<string>;
   signMessage: (message: string) => Promise<string>;
 }
@@ -98,11 +97,12 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
         setLoggedIn(true);
 
         const userInfo = await getUserInfo();
-        const publicKey = await getAccounts();
+        const publicKey = await getAccounts(web3authProvider);
         await createUser({ userInfo, publicKey });
       }
     } catch (e) {
       console.log(e);
+      logout()
       showMessage("Error connecting in!", "error");
     }
   };
@@ -154,8 +154,8 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
     return user;
   };
 
-  const getAccounts = async () => {
-    const solanaWallet = new SolanaWallet(provider);
+  const getAccounts = async (newProvider: IProvider) => {
+    const solanaWallet = new SolanaWallet(newProvider);
     // Get user's Solana public address
     const accounts = await solanaWallet.requestAccounts();
     return accounts[0];

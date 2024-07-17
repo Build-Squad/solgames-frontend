@@ -28,7 +28,7 @@ import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 import { useSocket } from "@/context/socketContext";
 import { ContentCopy } from "@mui/icons-material";
-import FinalModal from "../finalModal";
+import FinalModal from "../modals/finalModal";
 
 // White small letter, Black big letter
 const pieceImages: { [key: string]: string } = {

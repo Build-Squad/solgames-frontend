@@ -19,6 +19,7 @@ import { useState, forwardRef, ChangeEvent } from "react";
 import { TransitionProps } from "@mui/material/transitions";
 import { generateInviteCode } from "@/utils/helper";
 import { useWeb3Auth } from "@/context/web3AuthProvider";
+import CreateGameModal from "@/components/modals/createGameModal";
 
 const questrial = Questrial({
   weight: "400",
@@ -37,6 +38,7 @@ const Transition = forwardRef(function Transition(
 export default function Home() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
   const [inviteCode, setInviteCode] = useState("");
   const { loggedIn } = useWeb3Auth();
 
@@ -47,7 +49,7 @@ export default function Home() {
   };
 
   const createGame = () => {
-    router.push(`/play?gameCode=${generateInviteCode()}`);
+    setCreateModalOpen(true);
   };
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -173,7 +175,10 @@ export default function Home() {
           </>
         ) : null}
       </Box>
-      <Dialog
+      {createModalOpen ? (
+        <CreateGameModal handleClose={() => setCreateModalOpen(false)} />
+      ) : null}
+      {/* <Dialog
         open={open}
         onClose={handleClose}
         TransitionComponent={Transition}
@@ -225,7 +230,7 @@ export default function Home() {
             Join
           </Button>
         </DialogActions>
-      </Dialog>
+      </Dialog> */}
     </Box>
   );
 }
