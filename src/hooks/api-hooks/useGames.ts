@@ -5,6 +5,7 @@ export const useGetAllGames = (id: string) => {
   return useQuery({
     queryKey: [`all-games-with-id-${id}`],
     queryFn: () => GameServices.getGamesWithId(id),
+    enabled: !!id,
   });
 };
 

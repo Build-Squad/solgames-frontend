@@ -80,7 +80,7 @@ const CreateGameModal = ({ handleClose }) => {
         gameDateTime: `${date}T${time}:00`,
         creatorId: user.id,
       });
-      // handleClose();
+      handleClose();
     } else {
       showMessage("Invalid input!", "error");
     }
