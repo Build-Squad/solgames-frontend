@@ -1,62 +1,39 @@
 "use client";
 import { useAuth } from "@/context/authContext";
 import { useGetAllGames } from "@/hooks/api-hooks/useGames";
-import { Menu, MenuItem } from "@mui/material";
+import { Box, Menu, MenuItem, IconButton, Chip } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
-import React, { useEffect, useState } from "react";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
+import React, { EventHandler, useEffect, useState } from "react";
+import GameDetailsModal from "@/components/modals/gameDetailsModal";
+import { STATUS_COLORS } from "@/utils/constants";
+import { CheckCircle, Cancel } from "@mui/icons-material";
 
 const renderIsGameAccepted = (params) => {
-  const value = params.value;
-  let color;
-
-  switch (value) {
-    case true:
-      color = "success";
-      break;
-    case false:
-      color = "warning";
-      break;
-    default:
-      color = "default";
-  }
-
-  return (
-    <span style={{ color }} className="game-status-pill">
-      {value ? "Accepted" : "Pending"}
-    </span>
+  return params.value ? (
+    <CheckCircle
+      sx={{
+        color: "#2196F3",
+      }}
+    />
+  ) : (
+    <Cancel sx={{ color: "#F44336" }} />
   );
 };
 
-const columns = [
-  { field: "id", headerName: "ID", width: 200 },
-  { field: "token", headerName: "Token", width: 150 },
-  { field: "betAmount", headerName: "Bet Amount", width: 150 },
-  { field: "inviteCode", headerName: "Invite Code", width: 200 },
-  { field: "gameDateTime", headerName: "Game Date Time", width: 200 },
-  {
-    field: "isGameAccepted",
-    headerName: "Game Accepted",
-    width: 150,
-    renderCell: renderIsGameAccepted,
-  },
-  { field: "createdAt", headerName: "Created At", width: 200 },
-  { field: "updatedAt", headerName: "Updated At", width: 200 },
-  {
-    field: "actions",
-    headerName: "Actions",
-    width: 150,
-    renderCell: (params) => (
-      <DropdownMenu options={["View Details", "Edit", "Delete"]} />
-    ),
-  },
-];
+const renderGameStatus = (params) => {
+  const value = params.value;
+  const chipStyle = STATUS_COLORS[value];
+  return <Chip color="success" label={value} sx={{ ...chipStyle }} />;
+};
 
 const DropdownMenu = ({ options }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
 
-  const handleClick = (event) => {
-    setAnchorEl(event.currentTarget);
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    setAnchorEl(e.currentTarget);
   };
 
   const handleClose = () => {
@@ -65,13 +42,13 @@ const DropdownMenu = ({ options }) => {
 
   return (
     <div>
-      <button
+      <IconButton
         aria-controls={open ? "action-menu" : undefined}
         aria-haspopup="true"
         onClick={handleClick}
       >
-        Actions
-      </button>
+        <MoreVertIcon />
+      </IconButton>
       <Menu
         id="action-menu"
         anchorEl={anchorEl}
@@ -91,34 +68,159 @@ const DropdownMenu = ({ options }) => {
 
 const MyGames = () => {
   const { user } = useAuth();
-  const { data: userGames, refetch: refetchUserGames } = useGetAllGames(
-    user?.id
-  );
+  const {
+    data: userGames,
+    refetch: refetchUserGames,
+    isLoading,
+  } = useGetAllGames(user?.id);
+  const [selectedGame, setSelectedGame] = useState(null);
 
   useEffect(() => {
-    console.log("user?.id ==== ", user?.id);
-    refetchUserGames();
+    if (user?.id) {
+      refetchUserGames();
+    }
   }, [user?.id]);
 
-  console.log("userGames  ==== ", userGames);
+  const handleRowClick = (params) => {
+    setSelectedGame(params?.row);
+  };
+
   return (
-    <div style={{ height: 400, width: "100%" }}>
-      <DataGrid
-        rows={userGames ?? []}
-        columns={columns}
-        initialState={{
-          pagination: {
-            paginationModel: {
-              page: 0,
-              pageSize: 10,
-            },
-          },
+    <>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
         }}
-        pageSizeOptions={[5, 10]}
-        checkboxSelection
-        disableRowSelectionOnClick
-      />
-    </div>
+      >
+        <Box
+          m="8px 0 0 0"
+          width="100%"
+          sx={{
+            padding: "2% 5%",
+            "& .MuiDataGrid-root": {
+              boxShadow: "5px 5px 10px grey",
+            },
+            "& .MuiDataGrid-cell": {
+              borderBottom: "none",
+            },
+            "& .MuiDataGrid-columnHeaderTitle": {
+              fontWeight: "bold",
+            },
+            "& .MuiDataGrid-virtualScroller": {
+              backgroundColor: "#fff",
+            },
+            "& .MuiDataGrid-footerContainer": {
+              borderTop: "none",
+              backgroundColor: "#fff",
+            },
+            "& .MuiDataGrid-toolbarContainer .MuiButton-text": {
+              color: `#e0e0e0 !important`,
+            },
+          }}
+        >
+          <DataGrid
+            rows={userGames ?? []}
+            columns={[
+              {
+                field: "id",
+                headerName: "ID",
+                flex: 1,
+              },
+              {
+                field: "token",
+                headerName: "Token",
+                flex: 1,
+                headerAlign: "center",
+                cellClassName: "center-align",
+              },
+              {
+                field: "betAmount",
+                headerName: "Bet Amount",
+                flex: 1,
+                headerAlign: "center",
+                cellClassName: "center-align",
+              },
+              {
+                field: "inviteCode",
+                headerName: "Invite Code",
+                flex: 1,
+                headerAlign: "center",
+                cellClassName: "center-align",
+              },
+              {
+                field: "gameDateTime",
+                headerName: "Event Date Time",
+                flex: 1,
+                headerAlign: "center",
+                renderCell: (params) => {
+                  const date = new Date(params.value);
+                  return date.toLocaleString();
+                },
+                cellClassName: "center-align",
+              },
+              {
+                field: "isGameAccepted",
+                headerName: "Game Accepted",
+                flex: 1,
+                headerAlign: "center",
+                renderCell: renderIsGameAccepted,
+                cellClassName: "center-align",
+              },
+              {
+                field: "gameStatus",
+                headerName: "Status",
+                flex: 1,
+                headerAlign: "center",
+                renderCell: renderGameStatus,
+                cellClassName: "center-align",
+              },
+              {
+                field: "actions",
+                headerName: "Actions",
+                flex: 1,
+                headerAlign: "center",
+                renderCell: (params) => (
+                  <DropdownMenu options={["View Details", "Edit", "Delete"]} />
+                ),
+                cellClassName: "center-align",
+              },
+            ]}
+            initialState={{
+              pagination: {
+                paginationModel: {
+                  page: 0,
+                  pageSize: 10,
+                },
+              },
+            }}
+            sx={{
+              "& .MuiDataGrid-cell:hover": {
+                cursor: "pointer",
+                color: "primary.main",
+              },
+              "& .center-align": {
+                textAlign: "center",
+              },
+            }}
+            pageSizeOptions={[5, 10]}
+            checkboxSelection
+            disableRowSelectionOnClick
+            disableColumnMenu
+            density="comfortable"
+            loading={isLoading}
+            onRowClick={handleRowClick}
+          />
+        </Box>
+      </Box>
+      {!!selectedGame ? (
+        <GameDetailsModal
+          handleClose={() => setSelectedGame(null)}
+          game={selectedGame}
+        />
+      ) : null}
+    </>
   );
 };
 
