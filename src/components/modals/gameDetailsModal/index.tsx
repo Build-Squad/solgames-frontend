@@ -135,12 +135,31 @@ const GameDetailsDialog: React.FC<GameDetailsDialogProps> = ({
         <Button
           onClick={handleClose}
           variant="outlined"
-          sx={{ marginRight: "8px" }}
+          sx={{
+            color: "#FF5C00",
+            borderColor: "#FF5C00",
+            ":hover": {
+              borderColor: "#FF5C00",
+              backgroundColor: "none",
+            },
+          }}
         >
           Close
         </Button>
         {playButtonEnabled && (
-          <Button onClick={() => alert("Play!")} variant="contained">
+          <Button
+            onClick={() => alert("Play!")}
+            variant="contained"
+            sx={{
+              color: "black",
+              backgroundColor: "#FF5C00",
+              fontWeight: "bold",
+              transition: "transform .1s",
+              ":hover": {
+                backgroundColor: "#FF5C00",
+              },
+            }}
+          >
             Play
           </Button>
         )}
