@@ -7,5 +7,8 @@ class GameServices {
   createGame = async (payload) => {
     return CoreAPIService.post<any>(`/games`, payload);
   };
+  getGameWithInviteCode = async (inviteCode: string) => {
+    return CoreAPIService.get<any>(`/games/by-code/${inviteCode}`);
+  };
 }
 export default new GameServices();

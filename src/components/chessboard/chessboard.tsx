@@ -29,6 +29,7 @@ import { useSearchParams } from "next/navigation";
 import { useSocket } from "@/context/socketContext";
 import { ContentCopy } from "@mui/icons-material";
 import FinalModal from "../modals/finalModal";
+import { useGetGameWithInviteCode } from "@/hooks/api-hooks/useGames";
 
 // White small letter, Black big letter
 const pieceImages: { [key: string]: string } = {
@@ -67,6 +68,10 @@ const indexToSquare = (index: number): ChessSquare => {
   return `${file}${rank}` as ChessSquare;
 };
 
+// const GamingArcade = () => {
+//   return 
+// }
+
 const Chessboard: React.FC = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -92,6 +97,10 @@ const Chessboard: React.FC = () => {
   const [isValidGame, setIsValidGame] = useState(false);
   const isWhitePlayer = playerColor == "w";
   const [openFinalModal, setOpenFinalModal] = useState(false);
+
+  const { data: gameData } = useGetGameWithInviteCode(inviteCode);
+
+  console.log("gameData === ", gameData);
 
   useEffect(() => {
     if (socket) {
@@ -167,7 +176,7 @@ const Chessboard: React.FC = () => {
           return;
         }
         if (message?.errorType == "GAME_DRAW") {
-          alert("GAME DRAW")
+          alert("GAME DRAW");
           return;
         }
         handleShakeScreen();
