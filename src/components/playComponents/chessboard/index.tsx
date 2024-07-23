@@ -1,15 +1,8 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
-import {
-  Alert,
-  Backdrop,
-  Box,
-  CircularProgress,
-  Snackbar,
-  Typography,
-} from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import { Chess, Square as ChessSquare } from "chess.js";
-import PlayerComp from "@/components/playerComp";
+import PlayerComp from "@/components/playComponents/playerComp";
 import Image from "next/image";
 import styles from "./chessboard.module.css";
 import Black_Bishop from "@/assets/Pieces/Black_Bishop.svg";
@@ -25,11 +18,10 @@ import White_Pawn from "@/assets/Pieces/White_Pawn.svg";
 import White_Queen from "@/assets/Pieces/White_Queen.svg";
 import White_Rook from "@/assets/Pieces/White_Rook.svg";
 import { useRouter } from "next/navigation";
-import { useSearchParams } from "next/navigation";
 import { useSocket } from "@/context/socketContext";
+import FinalModal from "../../modals/finalModal";
 import { ContentCopy } from "@mui/icons-material";
-import FinalModal from "../modals/finalModal";
-import { useGetGameWithInviteCode } from "@/hooks/api-hooks/useGames";
+import { useSnackbar } from "@/context/snackbarContext";
 
 // White small letter, Black big letter
 const pieceImages: { [key: string]: string } = {
@@ -68,51 +60,24 @@ const indexToSquare = (index: number): ChessSquare => {
   return `${file}${rank}` as ChessSquare;
 };
 
-// const GamingArcade = () => {
-//   return 
-// }
-
-const Chessboard: React.FC = () => {
-  const searchParams = useSearchParams();
+const Chessboard = () => {
   const router = useRouter();
-  const { socket, setSocket } = useSocket();
-
-  const inviteCode = searchParams.get("inviteCode");
-  const gameCode = searchParams.get("gameCode");
-
-  const [compInviteCode, setCompInviteCode] = useState(inviteCode);
-  const [compGameCode, setCompGameCode] = useState(gameCode);
-  const [snackbarMessage, setSnackbarMessage] = useState("");
   const [chess, setChess] = useState(new Chess());
+  const [shake, setShake] = useState(false);
+  const [selectedSquare, setSelectedSquare] = useState<number | null>(null);
+  const [possibleMoves, setPossibleMoves] = useState<ChessSquare[]>([]);
+  const [capturedWhitePieces, setCapturedWhitePieces] = useState<string[]>([]);
+  const [capturedBlackPieces, setCapturedBlackPieces] = useState<string[]>([]);
+  const [openFinalModal, setOpenFinalModal] = useState(false);
+  const [playerColor, setPlayerColor] = useState<"w" | "b" | null>(null);
+  const [gameId, setGameId] = useState<string | null>(null);
   const [squares, setSquares] = useState<(string | null)[]>(
     Array(64).fill(null)
   );
-  const [selectedSquare, setSelectedSquare] = useState<number | null>(null);
-  const [possibleMoves, setPossibleMoves] = useState<ChessSquare[]>([]);
-  const [shake, setShake] = useState(false);
-  const [capturedWhitePieces, setCapturedWhitePieces] = useState<string[]>([]);
-  const [capturedBlackPieces, setCapturedBlackPieces] = useState<string[]>([]);
-  const [gameId, setGameId] = useState<string | null>(null);
-  const [playerColor, setPlayerColor] = useState<"w" | "b" | null>(null);
-  const [isValidGame, setIsValidGame] = useState(false);
+  const { socket, setSocket } = useSocket();
+  const { showMessage } = useSnackbar();
+
   const isWhitePlayer = playerColor == "w";
-  const [openFinalModal, setOpenFinalModal] = useState(false);
-
-  const { data: gameData } = useGetGameWithInviteCode(inviteCode);
-
-  console.log("gameData === ", gameData);
-
-  useEffect(() => {
-    if (socket) {
-      if (compInviteCode) {
-        socket.emit("joinGame", inviteCode);
-        setCompInviteCode("");
-      } else if (compGameCode) {
-        socket.emit("createGame", gameCode);
-        setCompGameCode("");
-      }
-    }
-  }, [inviteCode, gameCode, socket]);
 
   const updateBoard = useCallback((chessInstance: Chess) => {
     const newSquares = Array(64).fill(null);
@@ -146,7 +111,6 @@ const Chessboard: React.FC = () => {
           (player: any) => player.id === socket.id
         );
         setPlayerColor(player.color);
-        setIsValidGame(true);
       });
 
       socket.on("playerJoined", (game: any) => {
@@ -158,7 +122,6 @@ const Chessboard: React.FC = () => {
           (player: any) => player.id === socket.id
         );
         setPlayerColor(player.color);
-        setIsValidGame(true);
       });
 
       socket.on("moveMade", (game: any) => {
@@ -180,7 +143,7 @@ const Chessboard: React.FC = () => {
           return;
         }
         handleShakeScreen();
-        setSnackbarMessage(message?.errorMessage);
+        showMessage(message?.errorMessage, "error");
 
         // Error while connecting to a game
         if (
@@ -202,7 +165,7 @@ const Chessboard: React.FC = () => {
 
     if (!piece) {
       handleShakeScreen();
-      setSnackbarMessage("No piece selected!");
+      showMessage("No piece selected!", "error");
       return;
     }
 
@@ -236,10 +199,10 @@ const Chessboard: React.FC = () => {
       } else {
         handleShakeScreen();
         if (chess.turn() != playerColor) {
-          setSnackbarMessage("Not your turn!");
-        } else if (!piece) setSnackbarMessage("Select a piece!");
+          showMessage("Not your turn!", "error");
+        } else if (!piece) showMessage("Select a piece!", "error");
         else if (piece.color !== playerColor)
-          setSnackbarMessage("Not your piece!");
+          showMessage("Not your piece!", "error");
       }
     } else {
       // If selecting another piece of the current player's color
@@ -260,81 +223,14 @@ const Chessboard: React.FC = () => {
     updateBoard(chess);
   }, [updateBoard, chess]);
 
-  const handleCloseSnackbar = () => setSnackbarMessage("");
-
-  const handleCopyCode = () => {
-    navigator.clipboard.writeText(gameCode);
-  };
-
   const doesPossibleMoveCutsPiece = (index: number) => {
     const fromSquare = indexToSquare(index);
     const piece = chess.get(fromSquare);
 
     return piece && possibleMoves.includes(fromSquare);
   };
-
-  // Loading the game
-  if (!isValidGame)
-    return (
-      <>
-        <Backdrop
-          sx={{ color: "#fff", zIndex: (theme) => theme.zIndex.drawer + 1 }}
-          open={true}
-        >
-          <CircularProgress color="inherit" />
-        </Backdrop>
-        <Snackbar
-          open={!!snackbarMessage}
-          autoHideDuration={3000}
-          onClose={handleCloseSnackbar}
-          anchorOrigin={{ vertical: "top", horizontal: "center" }}
-        >
-          <Alert
-            onClose={handleCloseSnackbar}
-            severity="error"
-            variant="filled"
-            sx={{ width: "100%" }}
-          >
-            {snackbarMessage}
-          </Alert>
-        </Snackbar>
-      </>
-    );
-
   return (
-    <Box
-      sx={{
-        height: "fit-content",
-        width: "100%",
-      }}
-    >
-      {gameCode ? (
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "center",
-            py: 1,
-            px: 3,
-            backgroundColor: "#FF5C00",
-          }}
-        >
-          <Typography
-            sx={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "Center",
-              columnGap: "12px",
-            }}
-          >
-            Invite you friend using this code - {gameCode}
-            <ContentCopy
-              onClick={handleCopyCode}
-              style={{ cursor: "pointer" }}
-              fontSize="small"
-            />
-          </Typography>
-        </Box>
-      ) : null}
+    <>
       <Box
         sx={{
           display: "flex",
@@ -493,28 +389,13 @@ const Chessboard: React.FC = () => {
           You are {playerColor == "w" ? "White Player" : "Black Player"}
         </Typography>
       </Box>
-      <Snackbar
-        open={!!snackbarMessage}
-        autoHideDuration={1000}
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: "top", horizontal: "center" }}
-      >
-        <Alert
-          onClose={handleCloseSnackbar}
-          severity="error"
-          variant="filled"
-          sx={{ width: "100%" }}
-        >
-          {snackbarMessage}
-        </Alert>
-      </Snackbar>
       {openFinalModal && (
         <FinalModal
           handleClose={() => null}
           playerName={`${playerColor}-player`}
         />
       )}
-    </Box>
+    </>
   );
 };
 

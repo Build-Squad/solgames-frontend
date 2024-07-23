@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -9,9 +9,12 @@ import {
   Grid,
   Badge,
   Chip,
+  Box,
 } from "@mui/material";
 import chess_image from "../../../assets/chess2.jpg";
 import { STATUS_COLORS } from "@/utils/constants";
+import { useRouter } from "next/navigation";
+import { differenceInSeconds } from "date-fns";
 
 interface GameDetailsDialogProps {
   handleClose: () => void;
@@ -30,16 +33,44 @@ interface GameDetailsDialogProps {
   };
 }
 
+const formatTimeLeft = (seconds: number) => {
+  const days = Math.floor(seconds / (3600 * 24));
+  const hours = Math.floor((seconds % (3600 * 24)) / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const remainingSeconds = seconds % 60;
+  return `${days}d ${String(hours).padStart(2, "0")}h:${String(
+    minutes
+  ).padStart(2, "0")}m:${String(remainingSeconds).padStart(2, "0")}s`;
+};
+
 const GameDetailsDialog: React.FC<GameDetailsDialogProps> = ({
   handleClose,
   game,
 }) => {
+  const [timeLeft, setTimeLeft] = useState<number>(0);
+
   const gameDate = new Date(game?.gameDateTime);
-  const playButtonEnabled = ![
-    STATUS_COLORS.Draw.value,
-    STATUS_COLORS.Expired.value,
-    STATUS_COLORS.Completed.value,
-  ].includes(game.gameStatus);
+  const playButtonEnabled =
+    ![
+      STATUS_COLORS.Draw.value,
+      STATUS_COLORS.Expired.value,
+      STATUS_COLORS.Completed.value,
+    ].includes(game.gameStatus) &&
+    timeLeft <= 0 &&
+    game.isGameAccepted;
+
+  useEffect(() => {
+    const gameDate = new Date(game.gameDateTime);
+    const interval = setInterval(() => {
+      setTimeLeft(differenceInSeconds(gameDate, new Date()));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [game.gameDateTime]);
+
+  const handlePlay = () => {
+    // router.push(`/play?inviteCode=${game.inviteCode}`);
+  };
 
   return (
     <Dialog
@@ -48,27 +79,9 @@ const GameDetailsDialog: React.FC<GameDetailsDialogProps> = ({
       maxWidth="lg"
       fullWidth
       sx={{
-        boxShadow: "10px 10px 10px black",
         "& .MuiDialog-paper": {
-          backgroundImage: `url(${chess_image.src})`,
-          backgroundSize: "cover",
-          padding: "32px",
-          position: "relative",
-          "&::before": {
-            content: '""',
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.7)",
-            backdropFilter: "blur(2px)",
-            zIndex: 1,
-          },
-          "& > *": {
-            position: "relative",
-            zIndex: 2,
-          },
+          boxShadow: "10px 10px 10px 10px black",
+          backgroundColor: "black",
         },
       }}
     >
@@ -122,6 +135,19 @@ const GameDetailsDialog: React.FC<GameDetailsDialogProps> = ({
               <Typography>{game.acceptorId}</Typography>
             </Grid>
           )}
+          {timeLeft > 0 &&
+            [
+              STATUS_COLORS.Scheduled.value,
+              STATUS_COLORS.Accepted.value,
+            ].includes(game.gameStatus) && (
+              <Grid item xs={12} textAlign="center">
+                <Box mt={2}>
+                  <Typography variant="h6" fontWeight="bold">
+                    Time Left: {formatTimeLeft(timeLeft)}
+                  </Typography>
+                </Box>
+              </Grid>
+            )}
         </Grid>
       </DialogContent>
       <DialogActions
@@ -148,7 +174,7 @@ const GameDetailsDialog: React.FC<GameDetailsDialogProps> = ({
         </Button>
         {playButtonEnabled && (
           <Button
-            onClick={() => alert("Play!")}
+            onClick={handlePlay}
             variant="contained"
             sx={{
               color: "black",

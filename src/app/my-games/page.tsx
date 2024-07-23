@@ -1,23 +1,42 @@
 "use client";
 import { useAuth } from "@/context/authContext";
 import { useGetAllGames } from "@/hooks/api-hooks/useGames";
-import { Box, Menu, MenuItem, IconButton, Chip } from "@mui/material";
+import {
+  Box,
+  Menu,
+  MenuItem,
+  IconButton,
+  Chip,
+  Typography,
+} from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import React, { EventHandler, useEffect, useState } from "react";
 import GameDetailsModal from "@/components/modals/gameDetailsModal";
 import { STATUS_COLORS } from "@/utils/constants";
-import { CheckCircle, Cancel } from "@mui/icons-material";
+import { CheckCircle, Cancel, ContentCopy } from "@mui/icons-material";
+import { useSnackbar } from "@/context/snackbarContext";
 
 const renderIsGameAccepted = (params) => {
-  return params.value ? (
-    <CheckCircle
+  return (
+    <Box
       sx={{
-        color: "#2196F3",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        height: "100%",
       }}
-    />
-  ) : (
-    <Cancel sx={{ color: "#F44336" }} />
+    >
+      {params.value ? (
+        <CheckCircle
+          sx={{
+            color: "#2196F3",
+          }}
+        />
+      ) : (
+        <Cancel sx={{ color: "#F44336" }} />
+      )}
+    </Box>
   );
 };
 
@@ -74,6 +93,7 @@ const MyGames = () => {
     isLoading,
   } = useGetAllGames(user?.id);
   const [selectedGame, setSelectedGame] = useState(null);
+  const { showMessage } = useSnackbar();
 
   useEffect(() => {
     if (user?.id) {
@@ -99,9 +119,6 @@ const MyGames = () => {
           width="100%"
           sx={{
             padding: "2% 5%",
-            "& .MuiDataGrid-root": {
-              boxShadow: "5px 5px 10px grey",
-            },
             "& .MuiDataGrid-cell": {
               borderBottom: "none",
             },
@@ -109,11 +126,11 @@ const MyGames = () => {
               fontWeight: "bold",
             },
             "& .MuiDataGrid-virtualScroller": {
-              backgroundColor: "#fff",
+              backgroundColor: "#bdbdbd",
             },
             "& .MuiDataGrid-footerContainer": {
               borderTop: "none",
-              backgroundColor: "#fff",
+              backgroundColor: "#bdbdbd",
             },
             "& .MuiDataGrid-toolbarContainer .MuiButton-text": {
               color: `#e0e0e0 !important`,
@@ -148,6 +165,29 @@ const MyGames = () => {
                 flex: 1,
                 headerAlign: "center",
                 cellClassName: "center-align",
+                renderCell: (params) => {
+                  const handleCopyCode = (e) => {
+                    e.stopPropagation();
+                    showMessage("Code copied to clipboard", "success");
+                    navigator.clipboard.writeText(params.value);
+                  };
+                  return (
+                    <span
+                      style={{
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        columnGap: "12px",
+                      }}
+                    >
+                      {params.value}
+                      <ContentCopy
+                        onClick={handleCopyCode}
+                        style={{ cursor: "pointer", fontSize: "12px" }}
+                      />
+                    </span>
+                  );
+                },
               },
               {
                 field: "gameDateTime",
@@ -198,7 +238,6 @@ const MyGames = () => {
             sx={{
               "& .MuiDataGrid-cell:hover": {
                 cursor: "pointer",
-                color: "primary.main",
               },
               "& .center-align": {
                 textAlign: "center",
