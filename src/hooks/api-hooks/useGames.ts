@@ -32,3 +32,19 @@ export const useCreateGame = () => {
     createGameMutateAsync,
   };
 };
+
+export const useAcceptGame = () => {
+  const {
+    isPending: isAcceptingGameLoading,
+    data: acceptGameResponse,
+    mutateAsync: acceptGameMutateAsync,
+  } = useMutation({
+    mutationFn: (payload: any) => GameServices.acceptGame(payload),
+  });
+
+  return {
+    isAcceptingGameLoading,
+    acceptGameResponse,
+    acceptGameMutateAsync,
+  };
+};

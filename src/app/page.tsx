@@ -36,7 +36,7 @@ export default function Home() {
         backgroundRepeat: "no-repeat",
       }}
     >
-      <Spline
+      {/* <Spline
         scene="https://prod.spline.design/XjnA5ZK0j9aKmlCa/scene.splinecode"
         style={{
           position: "absolute",
@@ -46,7 +46,7 @@ export default function Home() {
           height: "100%",
           zIndex: 1,
         }}
-      />
+      /> */}
 
       <Box
         sx={{

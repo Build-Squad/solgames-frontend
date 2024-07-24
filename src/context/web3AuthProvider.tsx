@@ -72,26 +72,31 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
   const [loggedIn, setLoggedIn] = useState(false);
   const { showMessage } = useSnackbar();
   const { connectionMutateAsync } = useConnectUser();
+  const [isInitialized, setIsInitialized] = useState(false);
   const { login: loginUser, logout: logoutUser } = useAuth();
 
-  useEffect(() => {
-    const init = async () => {
-      try {
-        await web3auth.initModal();
-        setProvider(web3auth.provider);
+  const init = async () => {
+    try {
+      await web3auth.initModal();
+      setProvider(web3auth.provider);
 
-        if (web3auth.connected) {
-          setLoggedIn(true);
-        }
-      } catch (error) {
-        console.error(error);
+      if (web3auth.connected) {
+        setLoggedIn(true);
       }
-    };
-
+      setIsInitialized(true);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+  useEffect(() => {
     init();
   }, []);
 
   const login = async () => {
+    if (!isInitialized) {
+      showMessage("Wallet is not ready yet. Please wait.", "info");
+      return;
+    }
     try {
       const web3authProvider = await web3auth.connect();
       setProvider(web3authProvider);
@@ -190,7 +195,8 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
     const solanaWallet = new SolanaWallet(provider);
 
     const msg = Buffer.from(message, "utf8");
-    await solanaWallet.signMessage(msg);
+    const msgUint8Array = new Uint8Array(msg);
+    await solanaWallet.signMessage(msgUint8Array);
     return;
   };
 

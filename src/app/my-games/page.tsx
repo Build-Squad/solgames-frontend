@@ -169,7 +169,9 @@ const MyGames = () => {
                   const handleCopyCode = (e) => {
                     e.stopPropagation();
                     showMessage("Code copied to clipboard", "success");
-                    navigator.clipboard.writeText(params.value);
+                    navigator.clipboard.writeText(
+                      `${process.env.NEXT_PUBLIC_FRONTEND}/join-game?joiningCode=${params.value}`
+                    );
                   };
                   return (
                     <span
