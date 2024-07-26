@@ -16,34 +16,56 @@ import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import { useRouter } from "next/navigation";
 import { useWeb3Auth } from "@/context/web3AuthProvider";
+import { useAuth } from "@/context/authContext";
 
 const drawerWidth = 240;
-const navLoggedInItems = ["Home", "Ranking", "Games"];
-const navLoggedOutItems = ["Play", "Puzzles", "Learn", "Watch", "Community"];
+const navLoggedInItems = [
+  { text: "Home", route: "/" },
+  { text: "Ranking", route: "/ranking" },
+  { text: "My Games", route: "/my-games" },
+];
+const navLoggedOutItems = [
+  { text: "Play", route: "/play" },
+  { text: "Puzzles", route: "/puzzles" },
+  { text: "Learn", route: "/learn" },
+  { text: "Watch", route: "/watch" },
+  { text: "Community", route: "/community" },
+];
 
 const DrawerAppBar = () => {
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = React.useState(false);
-  const { login, loggedIn, logout } = useWeb3Auth();
+  const { login, logout } = useWeb3Auth();
+  const { user } = useAuth();
 
   const handleDrawerToggle = () => {
     setMobileOpen((prevState) => !prevState);
   };
 
-  const renderDrawerItems = (items: string[]) => {
+  const renderDrawerItems = (items) => {
     return items.map((item) => (
-      <ListItem key={item} disablePadding>
-        <ListItemButton sx={{ textAlign: "center" }}>
-          <ListItemText primary={item} />
+      <ListItem key={item.text} disablePadding>
+        <ListItemButton
+          onClick={() => {
+            router.push(item.route);
+            handleDrawerToggle();
+          }}
+          sx={{ textAlign: "center" }}
+        >
+          <ListItemText primary={item.text} />
         </ListItemButton>
       </ListItem>
     ));
   };
 
-  const renderNavButtons = (items: string[]) => {
+  const renderNavButtons = (items) => {
     return items.map((item) => (
-      <Button key={item} sx={{ color: "#757575" }}>
-        {item}
+      <Button
+        key={item.text}
+        sx={{ color: "#757575" }}
+        onClick={() => router.push(item.route)}
+      >
+        {item.text}
       </Button>
     ));
   };
@@ -55,7 +77,7 @@ const DrawerAppBar = () => {
       </Typography>
       <Divider />
       <List>
-        {loggedIn
+        {!!user?.id
           ? renderDrawerItems(navLoggedInItems)
           : renderDrawerItems(navLoggedOutItems)}
       </List>
@@ -106,27 +128,47 @@ const DrawerAppBar = () => {
             CHESSMATE
           </Typography>
           <Box sx={{ display: "flex", columnGap: "8px" }}>
-            {loggedIn
-              ? renderNavButtons(navLoggedInItems)
-              : renderNavButtons(navLoggedOutItems)}
-            {loggedIn ? (
-              <Button onClick={() => router.push("/profile")} sx={{ color: "#757575" }}>
-                Profile
-              </Button>
-            ) : null}
-            <Button
-              variant="outlined"
-              sx={{
-                color: "#fff",
-                borderRadius: "20px",
-                border: "1px solid white",
-                px: 4,
-                fontWeight: "bold",
-              }}
-              onClick={loggedIn ? logout : login}
-            >
-              {loggedIn ? "Logout" : "Login / Signup"}
-            </Button>
+            {!!user?.id ? (
+              <>
+                {renderNavButtons(navLoggedInItems)}
+                <Button
+                  onClick={() => router.push("/profile")}
+                  sx={{ color: "#757575" }}
+                >
+                  Profile
+                </Button>
+                <Button
+                  variant="outlined"
+                  sx={{
+                    color: "#fff",
+                    borderRadius: "20px",
+                    border: "1px solid white",
+                    px: 4,
+                    fontWeight: "bold",
+                  }}
+                  onClick={logout}
+                >
+                  Logout
+                </Button>
+              </>
+            ) : (
+              <>
+                {renderNavButtons(navLoggedOutItems)}
+                <Button
+                  variant="outlined"
+                  sx={{
+                    color: "#fff",
+                    borderRadius: "20px",
+                    border: "1px solid white",
+                    px: 4,
+                    fontWeight: "bold",
+                  }}
+                  onClick={login}
+                >
+                  Connect
+                </Button>
+              </>
+            )}
           </Box>
         </Toolbar>
       </AppBar>

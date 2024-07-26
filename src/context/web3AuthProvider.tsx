@@ -15,7 +15,8 @@ import { OpenloginAdapter } from "@web3auth/openlogin-adapter";
 import { Web3Auth } from "@web3auth/modal";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { useSnackbar } from "./snackbarContext";
-import axios from "axios";
+import { useConnectUser } from "@/hooks/api-hooks/useUsers";
+import { useAuth } from "./authContext";
 
 const clientId =
   "BIaVlcUD-SUS5jlLfPG-V9Bj_EsI19Z31-HitBrMEhWDnOb-jEqKuwtq4W6mTymgwMQhhM5E9RbunQKkYAqnlSc";
@@ -51,7 +52,7 @@ interface Web3AuthContextProps {
   login: () => Promise<void>;
   logout: () => Promise<void>;
   getUserInfo: () => Promise<any>;
-  getAccounts: () => Promise<string[] | string>;
+  getAccounts: (provider: IProvider) => Promise<string[] | string>;
   getBalance: () => Promise<string>;
   signMessage: (message: string) => Promise<string>;
 }
@@ -70,25 +71,32 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
   const [provider, setProvider] = useState<IProvider | null>(null);
   const [loggedIn, setLoggedIn] = useState(false);
   const { showMessage } = useSnackbar();
+  const { connectionMutateAsync } = useConnectUser();
+  const [isInitialized, setIsInitialized] = useState(false);
+  const { login: loginUser, logout: logoutUser } = useAuth();
 
-  useEffect(() => {
-    const init = async () => {
-      try {
-        await web3auth.initModal();
-        setProvider(web3auth.provider);
+  const init = async () => {
+    try {
+      await web3auth.initModal();
+      setProvider(web3auth.provider);
 
-        if (web3auth.connected) {
-          setLoggedIn(true);
-        }
-      } catch (error) {
-        console.error(error);
+      if (web3auth.connected) {
+        setLoggedIn(true);
       }
-    };
-
+      setIsInitialized(true);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+  useEffect(() => {
     init();
   }, []);
 
   const login = async () => {
+    if (!isInitialized) {
+      showMessage("Wallet is not ready yet. Please wait.", "info");
+      return;
+    }
     try {
       const web3authProvider = await web3auth.connect();
       setProvider(web3authProvider);
@@ -96,11 +104,12 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
         setLoggedIn(true);
 
         const userInfo = await getUserInfo();
-        const publicKey = await getAccounts();
+        const publicKey = await getAccounts(web3authProvider);
         await createUser({ userInfo, publicKey });
       }
     } catch (e) {
       console.log(e);
+      logout();
       showMessage("Error connecting in!", "error");
     }
   };
@@ -118,7 +127,7 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
       idToken,
     } = userInfo;
     try {
-      await axios.post(`${process.env.NEXT_PUBLIC_BACKEND}/user`, {
+      const payload = {
         email,
         name,
         profileImage,
@@ -129,11 +138,14 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
         isMfaEnabled,
         idToken,
         publicKey,
-      });
+      };
 
-      showMessage("User information stored successfully!", "success");
+      const res = await connectionMutateAsync(payload);
+      loginUser(res.data);
+      showMessage(res.message, "success");
     } catch (e) {
       console.log(e);
+      logout();
       showMessage("Error connecting!", "error");
     }
   };
@@ -142,6 +154,7 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
     await web3auth.logout();
     setProvider(null);
     setLoggedIn(false);
+    logoutUser();
     showMessage("Logged out!", "success");
   };
 
@@ -150,8 +163,8 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
     return user;
   };
 
-  const getAccounts = async () => {
-    const solanaWallet = new SolanaWallet(provider);
+  const getAccounts = async (newProvider: IProvider) => {
+    const solanaWallet = new SolanaWallet(newProvider);
     // Get user's Solana public address
     const accounts = await solanaWallet.requestAccounts();
     return accounts[0];
@@ -182,7 +195,8 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
     const solanaWallet = new SolanaWallet(provider);
 
     const msg = Buffer.from(message, "utf8");
-    await solanaWallet.signMessage(msg);
+    const msgUint8Array = new Uint8Array(msg);
+    await solanaWallet.signMessage(msgUint8Array);
     return;
   };
 

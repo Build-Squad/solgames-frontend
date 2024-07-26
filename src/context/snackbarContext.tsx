@@ -4,7 +4,11 @@ import Snackbar from "@mui/material/Snackbar";
 import Alert, { AlertColor } from "@mui/material/Alert";
 
 interface SnackbarContextProps {
-  showMessage: (message: string, severity?: AlertColor) => void;
+  showMessage: (
+    message: string,
+    severity?: AlertColor,
+    newDuration?: number
+  ) => void;
 }
 
 const SnackbarContext = createContext<SnackbarContextProps | undefined>(
@@ -17,7 +21,7 @@ export const SnackbarProvider: React.FC<{ children: ReactNode }> = ({
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [severity, setSeverity] = useState<AlertColor>("success");
-  const [duration, setDuration] = useState<number>(1000);
+  const [duration, setDuration] = useState<number>(3000);
 
   const showMessage = (
     message: string,

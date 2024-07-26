@@ -1,57 +1,27 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import chessBackground from "../assets/chessBackground.svg";
-import {
-  Box,
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Slide,
-  TextField,
-  Typography,
-} from "@mui/material";
+import { Box, Button, Typography } from "@mui/material";
 import { Questrial } from "next/font/google";
 import Spline from "@splinetool/react-spline";
-import { useState, forwardRef, ChangeEvent } from "react";
-import { TransitionProps } from "@mui/material/transitions";
-import { generateInviteCode } from "@/utils/helper";
-import { useWeb3Auth } from "@/context/web3AuthProvider";
+import { useState } from "react";
+import CreateGameModal from "@/components/modals/createGameModal";
+import { useAuth } from "@/context/authContext";
+import JoinGameModal from "@/components/modals/joinGameModal";
 
 const questrial = Questrial({
   weight: "400",
   subsets: ["latin"],
 });
 
-const Transition = forwardRef(function Transition(
-  props: TransitionProps & {
-    children: React.ReactElement<any, any>;
-  },
-  ref: React.Ref<unknown>
-) {
-  return <Slide direction="up" ref={ref} {...props} />;
-});
-
 export default function Home() {
-  const router = useRouter();
-  const [open, setOpen] = useState(false);
-  const [inviteCode, setInviteCode] = useState("");
-  const { loggedIn } = useWeb3Auth();
+  const [joinGameOpen, setJoinGameOpen] = useState(false);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const { user } = useAuth();
 
-  const handleClose = () => setOpen(false);
-
-  const joinGame = () => {
-    router.push(`/play?inviteCode=${inviteCode}`);
-  };
-
+  const handleClose = () => setJoinGameOpen(false);
   const createGame = () => {
-    router.push(`/play?gameCode=${generateInviteCode()}`);
-  };
-
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setInviteCode(e.target.value);
+    setCreateModalOpen(true);
   };
 
   return (
@@ -66,7 +36,7 @@ export default function Home() {
         backgroundRepeat: "no-repeat",
       }}
     >
-      <Spline
+      {/* <Spline
         scene="https://prod.spline.design/XjnA5ZK0j9aKmlCa/scene.splinecode"
         style={{
           position: "absolute",
@@ -76,7 +46,7 @@ export default function Home() {
           height: "100%",
           zIndex: 1,
         }}
-      />
+      /> */}
 
       <Box
         sx={{
@@ -116,7 +86,7 @@ export default function Home() {
           World’s No. #1 decentralized chess game to stake crypto to play chess
           with friends and the winner takes all.
         </Typography>
-        {loggedIn ? (
+        {!!user?.id ? (
           <>
             <Box display={"flex"} columnGap={"20px"}>
               <Button
@@ -154,7 +124,7 @@ export default function Home() {
                   },
                 }}
                 onClick={() => {
-                  setOpen(true);
+                  setJoinGameOpen(true);
                 }}
               >
                 Join A Game
@@ -173,59 +143,10 @@ export default function Home() {
           </>
         ) : null}
       </Box>
-      <Dialog
-        open={open}
-        onClose={handleClose}
-        TransitionComponent={Transition}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
-      >
-        <DialogTitle>
-          {"Please enter the invite code to join your friends game?"}
-        </DialogTitle>
-        <DialogContent>
-          <TextField
-            value={inviteCode}
-            onChange={handleChange}
-            variant="filled"
-            fullWidth
-            label="Invite Code"
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button
-            variant="outlined"
-            sx={{
-              border: "1px solid #FF5C00",
-              color: "black",
-              px: 4,
-              fontWeight: "bold",
-              ":hover": {
-                border: "1px solid #FF5C00",
-              },
-            }}
-            onClick={handleClose}
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            sx={{
-              color: "black",
-              backgroundColor: "#FF5C00",
-              px: 4,
-              fontWeight: "bold",
-              ":hover": {
-                backgroundColor: "#FF5C00",
-              },
-            }}
-            onClick={joinGame}
-            autoFocus
-          >
-            Join
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {createModalOpen ? (
+        <CreateGameModal handleClose={() => setCreateModalOpen(false)} />
+      ) : null}
+      {joinGameOpen ? <JoinGameModal handleClose={handleClose} /> : null}
     </Box>
   );
 }
