@@ -1,4 +1,4 @@
-import { useState, forwardRef } from "react";
+import { useState, forwardRef, useEffect } from "react";
 import {
   Button,
   Dialog,
@@ -20,6 +20,7 @@ import { useCreateGame } from "@/hooks/api-hooks/useGames";
 import { useLoader } from "@/context/loaderContext";
 import { generateInviteCode } from "@/utils/helper";
 import CreateCelebrationModal from "../createCelebrationModal";
+import DummySignTransaction from "../dummySignTransaction";
 
 const questrial = Questrial({
   weight: "400",
@@ -52,31 +53,22 @@ const CreateGameModal = ({ handleClose }) => {
     currentDateTime.setMinutes(currentDateTime.getMinutes() + 2);
     return currentDateTime.toTimeString().split(" ")[0].substring(0, 5);
   });
-  const [isDateTimeValid, setIsDateTimeValid] = useState(true);
   const { showMessage } = useSnackbar();
   const { user } = useAuth();
   const { createGameMutateAsync } = useCreateGame();
   const { showLoader, hideLoader } = useLoader();
   const [inviteCode, setInviteCode] = useState("");
   const [isCelebrationModalOpen, setIsCelebrationModalOpen] = useState(false);
+  const [transactionModalOpen, setTransactionModalOpen] = useState(false);
+  const [isTransactionSigned, setIsTransactionSigned] = useState(false);
 
-  const validateDateTime = (selectedDate, selectedTime) => {
-    const selectedDateTime = new Date(`${selectedDate}T${selectedTime}`);
-    const currentDateTime = new Date();
-    currentDateTime.setMinutes(currentDateTime.getMinutes() + 1);
+  useEffect(() => {
+    if (isTransactionSigned) createGame();
+  }, [isTransactionSigned]);
 
-    if (selectedDateTime > currentDateTime) {
-      setIsDateTimeValid(true);
-      return true;
-    } else {
-      setIsDateTimeValid(false);
-      return false;
-    }
-  };
-
-  const handleCreateGame = async () => {
+  const createGame = async () => {
     showLoader();
-    if (validateDateTime(date, time)) {
+    if (validateDateTime(date, time, betAmount)) {
       const newInviteCode = generateInviteCode();
       await createGameMutateAsync({
         betAmount: parseFloat(betAmount),
@@ -86,10 +78,25 @@ const CreateGameModal = ({ handleClose }) => {
       });
       setInviteCode(newInviteCode);
       setIsCelebrationModalOpen(true);
-    } else {
-      showMessage("Invalid input!", "error");
     }
     hideLoader();
+  };
+
+  const validateDateTime = (selectedDate, selectedTime, betAmount) => {
+    const selectedDateTime = new Date(`${selectedDate}T${selectedTime}`);
+    const currentDateTime = new Date();
+    currentDateTime.setMinutes(currentDateTime.getMinutes() + 1);
+
+    const parsedAmount = parseFloat(betAmount);
+    const isValidBetAmount = !isNaN(parsedAmount) && parsedAmount > 0;
+
+    if (!isValidBetAmount) {
+      showMessage("Invalid bet amount!", "error");
+      return false;
+    } else if (selectedDateTime < currentDateTime) {
+      showMessage("Date and time must be at least 1 minute ahead!", "error");
+      return false;
+    } else return true;
   };
 
   const handleCelebrationModalClose = () => {
@@ -173,19 +180,10 @@ const CreateGameModal = ({ handleClose }) => {
               type="date"
               variant="filled"
               value={date}
-              onChange={(e) => {
-                setDate(e.target.value);
-                validateDateTime(e.target.value, time);
-              }}
+              onChange={(e) => setDate(e.target.value)}
               InputLabelProps={{ shrink: true }}
               inputProps={{ min: currentDateTime.currentDate }}
               fullWidth
-              error={!isDateTimeValid}
-              helperText={
-                !isDateTimeValid
-                  ? "Date and time must be at least 1 minute ahead"
-                  : ""
-              }
               sx={{
                 backgroundColor: "#2d2d44",
                 borderRadius: "5px",
@@ -198,10 +196,7 @@ const CreateGameModal = ({ handleClose }) => {
               type="time"
               variant="filled"
               value={time}
-              onChange={(e) => {
-                setTime(e.target.value);
-                validateDateTime(date, e.target.value);
-              }}
+              onChange={(e) => setTime(e.target.value)}
               InputLabelProps={{ shrink: true }}
               inputProps={{
                 min:
@@ -210,12 +205,6 @@ const CreateGameModal = ({ handleClose }) => {
                     : undefined,
               }}
               fullWidth
-              error={!isDateTimeValid}
-              helperText={
-                !isDateTimeValid
-                  ? "Date and time must be at least 1 minute ahead"
-                  : ""
-              }
               sx={{
                 backgroundColor: "#2d2d44",
                 borderRadius: "5px",
@@ -242,7 +231,10 @@ const CreateGameModal = ({ handleClose }) => {
             Cancel
           </Button>
           <Button
-            onClick={handleCreateGame}
+            onClick={() => {
+              validateDateTime(date, time, betAmount) &&
+                setTransactionModalOpen(true);
+            }}
             sx={{
               px: 4,
               fontWeight: "bold",
@@ -261,6 +253,12 @@ const CreateGameModal = ({ handleClose }) => {
         open={isCelebrationModalOpen}
         handleClose={handleCelebrationModalClose}
         inviteCode={inviteCode}
+      />
+      <DummySignTransaction
+        open={transactionModalOpen}
+        handleClose={() => setTransactionModalOpen(false)}
+        setIsTransactionSigned={setIsTransactionSigned}
+        type={"CREATE"}
       />
     </>
   );

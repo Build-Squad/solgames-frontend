@@ -24,12 +24,21 @@ const style = {
   borderRadius: 3,
 };
 
-const TransactionModal = ({
+interface DummySignTransactionProps {
+  open: boolean;
+  handleClose: () => void;
+  setIsTransactionSigned: (isTransactionSigned: boolean) => void;
+  joiningCode?: string;
+  type?: string;
+}
+
+const DummySignTransaction = ({
   open,
   handleClose,
   setIsTransactionSigned,
   joiningCode,
-}) => {
+  type = "ACCEPT",
+}: DummySignTransactionProps) => {
   const [loading, setLoading] = useState(false);
   const [transactionApproved, setTransactionApproved] = useState(false);
   const { showMessage } = useSnackbar();
@@ -38,13 +47,36 @@ const TransactionModal = ({
 
   const handleSign = async () => {
     setLoading(true);
-    await acceptGameMutateAsync({ acceptorId: user?.id, joiningCode });
-    setTimeout(() => {
-      setLoading(false);
-      setTransactionApproved(true);
-      showMessage("Invite accepted!!");
-      setIsTransactionSigned(true);
-    }, 2000);
+    if (type == "ACCEPT") {
+      try {
+        const res = await acceptGameMutateAsync({
+          acceptorId: user?.id,
+          joiningCode,
+        });
+        if (res.success) {
+          setTimeout(() => {
+            setLoading(false);
+            setTransactionApproved(true);
+            showMessage("Accepted Successfully!");
+            setIsTransactionSigned(true);
+            handleClose();
+          }, 2000);
+        } else {
+          throw res.message;
+        }
+      } catch (err) {
+        setLoading(false);
+        showMessage(err, "error");
+      }
+    } else {
+      setTimeout(() => {
+        setLoading(false);
+        setTransactionApproved(true);
+        showMessage("Created Successfully!");
+        setIsTransactionSigned(true);
+        handleClose();
+      }, 2000);
+    }
   };
 
   return (
@@ -116,4 +148,4 @@ const TransactionModal = ({
   );
 };
 
-export default TransactionModal;
+export default DummySignTransaction;
