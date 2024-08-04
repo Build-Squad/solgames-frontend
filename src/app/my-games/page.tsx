@@ -89,7 +89,7 @@ const MyGames = () => {
   const { user } = useAuth();
   const {
     data: userGames,
-    refetch: refetchUserGames,
+    updatedRefetch,
     isLoading,
   } = useGetAllGames(user?.id);
   const [selectedGame, setSelectedGame] = useState(null);
@@ -97,7 +97,7 @@ const MyGames = () => {
 
   useEffect(() => {
     if (user?.id) {
-      refetchUserGames();
+      updatedRefetch(user?.id);
     }
   }, [user?.id]);
 

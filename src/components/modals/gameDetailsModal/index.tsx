@@ -11,26 +11,13 @@ import {
   Chip,
   Box,
 } from "@mui/material";
-import chess_image from "../../../assets/chess2.jpg";
 import { STATUS_COLORS } from "@/utils/constants";
-import { useRouter } from "next/navigation";
 import { differenceInSeconds } from "date-fns";
+import { Game } from "@/types/game";
 
 interface GameDetailsDialogProps {
   handleClose: () => void;
-  game: {
-    id: string;
-    token: string;
-    betAmount: string;
-    inviteCode: string;
-    gameDateTime: string;
-    isGameAccepted: boolean;
-    createdAt: string;
-    updatedAt: string;
-    acceptorId?: string;
-    creatorId?: string;
-    gameStatus?: string;
-  };
+  game: Game;
 }
 
 const formatTimeLeft = (seconds: number) => {

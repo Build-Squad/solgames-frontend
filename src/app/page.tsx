@@ -3,11 +3,11 @@
 import chessBackground from "../assets/chessBackground.svg";
 import { Box, Button, Typography } from "@mui/material";
 import { Questrial } from "next/font/google";
-import Spline from "@splinetool/react-spline";
 import { useState } from "react";
 import CreateGameModal from "@/components/modals/createGameModal";
 import { useAuth } from "@/context/authContext";
 import JoinGameModal from "@/components/modals/joinGameModal";
+import GameNotificationComponent from "@/components/gameNotiSnackbar";
 
 const questrial = Questrial({
   weight: "400",
@@ -36,18 +36,6 @@ export default function Home() {
         backgroundRepeat: "no-repeat",
       }}
     >
-      {/* <Spline
-        scene="https://prod.spline.design/XjnA5ZK0j9aKmlCa/scene.splinecode"
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
-          zIndex: 1,
-        }}
-      /> */}
-
       <Box
         sx={{
           display: "flex",
@@ -143,6 +131,7 @@ export default function Home() {
           </>
         ) : null}
       </Box>
+      <GameNotificationComponent />
       {createModalOpen ? (
         <CreateGameModal handleClose={() => setCreateModalOpen(false)} />
       ) : null}
