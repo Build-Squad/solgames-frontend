@@ -45,8 +45,6 @@ const GameNotificationComponent: React.FC = () => {
       const startTime = new Date(game.gameDateTime);
       const diff = startTime.getTime() - now.getTime();
 
-      console.log(diff);
-
       if (
         diff <= MIN_IN_MILI &&
         diff > 0 &&

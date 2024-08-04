@@ -44,7 +44,6 @@ export default function JoinGame({}: Props) {
       (gameData.data.gameStatus !== STATUS_COLORS.Scheduled.value ||
         gameData.data.isGameAccepted)
     ) {
-      console.log("Show message");
       showMessage(
         "The game is completed or another player has already joined the game!",
         "error"

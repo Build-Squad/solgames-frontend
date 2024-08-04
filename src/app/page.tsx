@@ -7,7 +7,6 @@ import { useState } from "react";
 import CreateGameModal from "@/components/modals/createGameModal";
 import { useAuth } from "@/context/authContext";
 import JoinGameModal from "@/components/modals/joinGameModal";
-import GameNotificationComponent from "@/components/gameNotiSnackbar";
 
 const questrial = Questrial({
   weight: "400",
@@ -131,7 +130,6 @@ export default function Home() {
           </>
         ) : null}
       </Box>
-      <GameNotificationComponent />
       {createModalOpen ? (
         <CreateGameModal handleClose={() => setCreateModalOpen(false)} />
       ) : null}
