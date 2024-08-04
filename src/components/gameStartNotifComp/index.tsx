@@ -15,7 +15,7 @@ import { Divider } from "@mui/material";
 
 const MIN_IN_MILI = 5 * 60 * 1000; // 5 minutes in milliseconds
 
-const GameNotificationComponent: React.FC = () => {
+const GameStartNotificationComponent: React.FC = () => {
   const pathname = usePathname();
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
@@ -162,4 +162,4 @@ const GameNotificationComponent: React.FC = () => {
   );
 };
 
-export default GameNotificationComponent;
+export default GameStartNotificationComponent;
