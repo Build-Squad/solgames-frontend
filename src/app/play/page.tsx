@@ -23,10 +23,17 @@ export default function Play({}: Props) {
 
   if (!isLoading && !!gameData) {
     let hasError = false;
+    if (!user?.id) {
+      hasError = true;
+      showMessage("Login to play the game", "error");
+      setTimeout(() => {
+        router.push("/");
+      }, 3000);
+    }
     if (
       !(
-        gameData?.data?.creatorId == user.id ||
-        gameData?.data?.acceptorId == user.id
+        gameData?.data?.creatorId == user?.id ||
+        gameData?.data?.acceptorId == user?.id
       )
     ) {
       hasError = true;

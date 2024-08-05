@@ -1,9 +1,7 @@
 "use client";
-import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import Navbar from "../components/navbar/navbar";
 import "./globals.css";
-import { SocketProvider } from "@/context/socketContext";
 import { Web3AuthProvider } from "@/context/web3AuthProvider";
 import { SnackbarProvider } from "@/context/snackbarContext";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -27,12 +25,10 @@ export default function RootLayout({
             <AuthProvider>
               <SnackbarProvider>
                 <Web3AuthProvider>
-                  <SocketProvider>
-                    <Navbar />
-                    {children}
-                    <GameStartNotificationComponent />
-                    <JoinGameNotificationComponent />
-                  </SocketProvider>
+                  <Navbar />
+                  {children}
+                  <GameStartNotificationComponent />
+                  <JoinGameNotificationComponent />
                 </Web3AuthProvider>
               </SnackbarProvider>
             </AuthProvider>
