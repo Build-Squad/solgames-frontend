@@ -30,7 +30,7 @@ const renderIsGameAccepted = (params) => {
       {params.value ? (
         <CheckCircle
           sx={{
-            color: "#2196F3",
+            color: "#4CAF50",
           }}
         />
       ) : (

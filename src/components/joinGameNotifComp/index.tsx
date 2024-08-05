@@ -45,12 +45,7 @@ const JoinGameNotificationComponent: React.FC = () => {
       const startTime = new Date(game.gameDateTime);
       const diff = now.getTime() - startTime.getTime();
 
-      if (
-        diff >= 0 &&
-        diff <= WARNING_DURATION &&
-        game.gameStatus === STATUS_COLORS.Accepted.value
-      ) {
-        console.log("Starting");
+      if (diff >= 0 && diff <= WARNING_DURATION && game.isGameAccepted) {
         showSnackbar(
           `Warning! The game with invite code "${game.inviteCode}" has already started. Please join to avoid loosing the game.`,
           game
@@ -112,7 +107,7 @@ const JoinGameNotificationComponent: React.FC = () => {
           }
         }}
         sx={{
-            maxWidth: "35vw",
+          maxWidth: "35vw",
           "& .MuiSnackbarContent-root": {
             backgroundColor: "#f57c00",
             color: "#fff",

@@ -6,34 +6,56 @@ import { useGetGameWithInviteCode } from "@/hooks/api-hooks/useGames";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { useSnackbar } from "@/context/snackbarContext";
+import { useAuth } from "@/context/authContext";
+import { STATUS_COLORS } from "@/utils/constants";
 
 type Props = {};
 
 export default function Play({}: Props) {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { user } = useAuth();
 
   const inviteCode = searchParams.get("inviteCode");
 
-  const { data: gameData } = useGetGameWithInviteCode(inviteCode);
+  const { data: gameData, isLoading } = useGetGameWithInviteCode(inviteCode);
   const { showMessage } = useSnackbar();
 
-  if (gameData && !gameData?.success) {
-    showMessage(gameData.message, "error", 3000);
-    setTimeout(() => {
-      router.back();
-    }, 3000);
-    return (
-      <>
-        <Backdrop
-          sx={{ color: "#fff", zIndex: (theme) => theme.zIndex.drawer + 1 }}
-          open={true}
-        >
-          <CircularProgress color="inherit" />
-        </Backdrop>
-      </>
-    );
+  if (!isLoading && !!gameData) {
+    let hasError = false;
+    if (
+      !(
+        gameData?.data?.creatorId == user.id ||
+        gameData?.data?.acceptorId == user.id
+      )
+    ) {
+      hasError = true;
+      showMessage("This game does not belong to you", "error");
+      setTimeout(() => {
+        router.push("/my-games");
+      }, 3000);
+    }
+    if (gameData?.data?.gameStatus != STATUS_COLORS.InProgress.value) {
+      hasError = true;
+      showMessage("The game has not started or is finished", "error");
+      setTimeout(() => {
+        router.push("/my-games");
+      }, 3000);
+    }
+    if (hasError) {
+      return (
+        <>
+          <Backdrop
+            sx={{ color: "#fff", zIndex: (theme) => theme.zIndex.drawer + 1 }}
+            open={true}
+          >
+            <CircularProgress color="inherit" />
+          </Backdrop>
+        </>
+      );
+    }
   }
+
   return (
     <Box
       sx={{
