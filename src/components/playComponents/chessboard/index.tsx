@@ -22,6 +22,7 @@ import { useSocket } from "@/context/socketContext";
 import FinalModal from "../../modals/finalModal";
 import { ContentCopy } from "@mui/icons-material";
 import { useSnackbar } from "@/context/snackbarContext";
+import { useAuth } from "@/context/authContext";
 
 // White small letter, Black big letter
 const pieceImages: { [key: string]: string } = {
@@ -76,6 +77,7 @@ const Chessboard = () => {
   );
   const { socket, setSocket } = useSocket();
   const { showMessage } = useSnackbar();
+  const { user } = useAuth();
 
   const isWhitePlayer = playerColor == "w";
 
@@ -108,7 +110,7 @@ const Chessboard = () => {
         setChess(newChess);
         updateBoard(newChess);
         const player = game.players.find(
-          (player: any) => player.id === socket.id
+          (player: any) => player.id === user.id
         );
         setPlayerColor(player.color);
       });
@@ -119,7 +121,7 @@ const Chessboard = () => {
         setChess(newChess);
         updateBoard(newChess);
         const player = game.players.find(
-          (player: any) => player.id === socket.id
+          (player: any) => player.id === user.id
         );
         setPlayerColor(player.color);
       });
@@ -179,7 +181,7 @@ const Chessboard = () => {
     const from = indexToSquare(selectedSquare!);
     const to = indexToSquare(index);
     const move = { from, to };
-    socket?.emit("makeMove", { gameId, move });
+    socket?.emit("makeMove", { gameId, move, userId: user.id });
     setPossibleMoves([]);
     setSelectedSquare(null);
   };
@@ -330,7 +332,7 @@ const Chessboard = () => {
           )}
 
           <Box
-            className={`${styles.board} ${shake ? styles.shake : ""}`}
+            className={`${styles.board}`}
             style={{
               transform: isWhitePlayer ? "none" : "rotate(180deg)",
             }}

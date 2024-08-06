@@ -1,6 +1,6 @@
 "use client";
 import { Backdrop, Box, CircularProgress } from "@mui/material";
-import React from "react";
+import React, { useEffect } from "react";
 import Chessboard from "@/components/playComponents/chessboard";
 import { useGetGameWithInviteCode } from "@/hooks/api-hooks/useGames";
 import { useSearchParams } from "next/navigation";
@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { useSnackbar } from "@/context/snackbarContext";
 import { useAuth } from "@/context/authContext";
 import { STATUS_COLORS } from "@/utils/constants";
+import { useSocket } from "@/context/socketContext";
 
 type Props = {};
 
@@ -15,11 +16,22 @@ export default function Play({}: Props) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { user } = useAuth();
+  const { socket } = useSocket();
 
   const inviteCode = searchParams.get("inviteCode");
 
   const { data: gameData, isLoading } = useGetGameWithInviteCode(inviteCode);
   const { showMessage } = useSnackbar();
+
+  useEffect(() => {
+    if (
+      socket &&
+      gameData?.success &&
+      gameData?.data?.gameStatus == STATUS_COLORS.InProgress.value
+    ) {
+      socket.emit("joinGame", { userId: user?.id, gameCode: inviteCode });
+    }
+  }, [user, inviteCode, gameData, socket]);
 
   if (!isLoading && !!gameData) {
     let hasError = false;

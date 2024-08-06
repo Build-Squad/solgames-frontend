@@ -103,6 +103,10 @@ const GameStartNotificationComponent: React.FC = () => {
     return `${minutes}:${secs < 10 ? "0" : ""}${secs}`;
   };
 
+  if (pathname.includes("/play?inviteCode")) {
+    handleCloseSnackbar();
+  }
+
   return (
     <>
       <Snackbar
