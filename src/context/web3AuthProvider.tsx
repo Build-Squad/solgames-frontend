@@ -60,8 +60,18 @@ interface Web3AuthContextProps {
   getUserInfo: () => Promise<any>;
   getAccounts: (provider: IProvider) => Promise<string[] | string>;
   getBalance: () => Promise<string>;
-  signMessage: (message: string) => Promise<string>;
-  transfer: (recipientAddress: string, amountInSol: number) => Promise<string>;
+  transfer: ({
+    recipientAddress,
+    amountInSol,
+  }: {
+    recipientAddress: string;
+    amountInSol: number;
+  }) => Promise<{
+    data: any;
+    message: string;
+    success: boolean;
+  }>;
+  isLoading: boolean;
 }
 
 interface Web3AuthProviderProps {
@@ -81,6 +91,7 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
   const { connectionMutateAsync } = useConnectUser();
   const [isInitialized, setIsInitialized] = useState(false);
   const { login: loginUser, logout: logoutUser } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
 
   const init = async () => {
     try {
@@ -170,25 +181,13 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
     const balance = await connection.getBalance(new PublicKey(accounts[0]));
     return (balance / 1e9).toString(); // Convert lamports to SOL
   };
-
-  const signMessage = async (message: string) => {
-    if (!provider) {
-      return "Provider is not initialized yet";
-    }
-    const solanaWallet = new SolanaWallet(provider);
-
-    const msg = Buffer.from(message, "utf8");
-    const msgUint8Array = new Uint8Array(msg);
-    await solanaWallet.signMessage(msgUint8Array);
-    return;
-  };
-
   // Function to handle SOL transfer
-  const transfer = async (recipientAddress: string, amountInSol: number) => {
+  const transfer = async ({ recipientAddress, amountInSol }) => {
     if (!provider) {
       throw new Error("Provider is not initialized.");
     }
 
+    setIsLoading(true);
     try {
       const solanaWallet = new SolanaWallet(provider);
       const accounts = await solanaWallet.requestAccounts();
@@ -227,16 +226,22 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
       );
 
       if (confirmation.value.err) {
-        showMessage("Transaction failed!", "error");
         throw new Error("Transaction failed!");
       }
 
-      showMessage("Transfer successful!", "success");
-      return "signature";
+      return {
+        data: signature,
+        success: true,
+        message: "Transaction Successful!",
+      };
     } catch (error) {
-      console.error("Error during transfer:", error);
-      showMessage("Transfer failed!", "error");
-      throw error;
+      return {
+        data: null,
+        success: false,
+        message: "Transfer failed!",
+      };
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -250,8 +255,8 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
         getUserInfo,
         getAccounts,
         getBalance,
-        signMessage,
         transfer,
+        isLoading,
       }}
     >
       {children}

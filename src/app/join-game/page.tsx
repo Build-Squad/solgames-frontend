@@ -1,5 +1,5 @@
 "use client";
-import DummySignTransaction from "@/components/modals/dummySignTransaction";
+import SignTransactionModal from "@/components/modals/SignTransactionModal";
 import NoDataFound from "@/components/noDataFound";
 import { useAuth } from "@/context/authContext";
 import { useSnackbar } from "@/context/snackbarContext";
@@ -15,28 +15,13 @@ export default function JoinGame({}: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const joiningCode = searchParams.get("joiningCode");
-  const [isTransactionSigned, setIsTransactionSigned] = useState(false);
 
   const { user } = useAuth();
-  const { login, signMessage } = useWeb3Auth();
+  const { login } = useWeb3Auth();
   const { showMessage } = useSnackbar();
 
   const { data: gameData, refetch: refetchGameData } =
     useGetGameWithInviteCode(joiningCode);
-
-  useEffect(() => {
-    if (user?.id) {
-      signMessage("Signing a random message");
-    }
-  }, [user?.id]);
-
-  useEffect(() => {
-    if (isTransactionSigned) {
-      setTimeout(() => {
-        router.push("/my-games");
-      }, 3000);
-    }
-  }, [isTransactionSigned]);
 
   useEffect(() => {
     if (
@@ -68,11 +53,11 @@ export default function JoinGame({}: Props) {
   }
 
   return (
-    <DummySignTransaction
+    <SignTransactionModal
       open={true}
       handleClose={() => {}}
-      setIsTransactionSigned={setIsTransactionSigned}
       joiningCode={joiningCode}
+      betAmount={gameData.data.betAmount}
     />
   );
 }

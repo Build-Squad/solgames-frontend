@@ -12,6 +12,8 @@ import solanaIcon from "../../../assets/solanaLogoMark.svg";
 import { useSnackbar } from "@/context/snackbarContext";
 import { useAuth } from "@/context/authContext";
 import { useAcceptGame } from "@/hooks/api-hooks/useGames";
+import { useWeb3Auth } from "@/context/web3AuthProvider";
+import { useRouter } from "next/navigation";
 
 const style = {
   position: "absolute",
@@ -24,58 +26,84 @@ const style = {
   borderRadius: 3,
 };
 
-interface DummySignTransactionProps {
+interface SignTransactionProps {
   open: boolean;
   handleClose: () => void;
-  setIsTransactionSigned: (isTransactionSigned: boolean) => void;
   joiningCode?: string;
   type?: string;
+  betAmount: string;
+  createGame?: () => Promise<void>;
 }
 
-const DummySignTransaction = ({
+const SignTransactionModal = ({
   open,
   handleClose,
-  setIsTransactionSigned,
   joiningCode,
   type = "ACCEPT",
-}: DummySignTransactionProps) => {
-  const [loading, setLoading] = useState(false);
+  betAmount,
+  createGame,
+}: SignTransactionProps) => {
+  const router = useRouter();
+  const [escrowAccount, setEscrowAccount] = useState(
+    "2TA2aASYQFWNyo8ac5V9Fg5E19nPYbHEfg8obnkfDMRv"
+  );
   const [transactionApproved, setTransactionApproved] = useState(false);
   const { showMessage } = useSnackbar();
   const { user } = useAuth();
   const { acceptGameMutateAsync } = useAcceptGame();
+  const { transfer, isLoading } = useWeb3Auth();
 
-  const handleSign = async () => {
-    setLoading(true);
-    if (type == "ACCEPT") {
-      try {
-        const res = await acceptGameMutateAsync({
+  const handleAcceptGame = async () => {
+    try {
+      const tx = await transfer({
+        recipientAddress: escrowAccount,
+        amountInSol: parseInt(betAmount),
+      });
+
+      if (tx.success) {
+        await acceptGameMutateAsync({
           acceptorId: user?.id,
           joiningCode,
         });
-        if (res.success) {
-          setTimeout(() => {
-            setLoading(false);
-            setTransactionApproved(true);
-            showMessage("Accepted Successfully!");
-            setIsTransactionSigned(true);
-            handleClose();
-          }, 2000);
-        } else {
-          throw res.message;
-        }
-      } catch (err) {
-        setLoading(false);
-        showMessage(err, "error");
-      }
-    } else {
-      setTimeout(() => {
-        setLoading(false);
         setTransactionApproved(true);
-        showMessage("Created Successfully!");
-        setIsTransactionSigned(true);
+        showMessage("Accepted Successfully!");
+        setTimeout(() => {
+          router.push("/my-games");
+          handleClose();
+        }, 3000);
+      } else {
+        showMessage("Transaction Failed!", "error");
+      }
+    } catch (err) {
+      showMessage(err, "error");
+    }
+  };
+
+  const handleCreateGame = async () => {
+    try {
+      const tx = await transfer({
+        recipientAddress: escrowAccount,
+        amountInSol: parseInt(betAmount),
+      });
+      if (tx.success) {
+        setTransactionApproved(true);
+        showMessage(tx.message);
+
+        createGame();
         handleClose();
-      }, 2000);
+      } else {
+        showMessage(tx.message, "error");
+      }
+    } catch (err) {
+      showMessage(err, "error");
+    }
+  };
+
+  const handleSign = async () => {
+    if (type == "ACCEPT") {
+      handleAcceptGame();
+    } else {
+      handleCreateGame();
     }
   };
 
@@ -100,29 +128,27 @@ const DummySignTransaction = ({
         </Typography>
         <Divider sx={{ my: 2 }} />
         <Typography variant="body2">
-          <b>Sender address</b> : 0x65231SDA65412KJASBNDB3
+          <b>Sender address</b> : {user?.publicKey}
         </Typography>
         <Typography variant="body2" sx={{ mt: 1 }}>
-          <b>Receiver address</b> : 0x65231SDA65412KJASBNDB
+          <b>Receiver address</b> : {escrowAccount}
         </Typography>
         <Divider sx={{ my: 2 }} />
         <Box display="flex" justifyContent="space-between" mb={1}>
-          <Typography variant="body2">Amount</Typography>
-          <Typography variant="body2">1 SOL</Typography>
-        </Box>
-        <Box display="flex" justifyContent="space-between" mb={2}>
-          <Typography variant="body2">Fee</Typography>
-          <Typography variant="body2">0.001234 ETH ≈ 1.40 USD</Typography>
+          <Typography variant="body2" fontWeight={"bold"}>
+            Amount:{" "}
+          </Typography>
+          <Typography variant="body2">{betAmount} SOL</Typography>
         </Box>
         <Button
           variant="contained"
           color="primary"
           fullWidth
           onClick={handleSign}
-          disabled={loading || transactionApproved}
+          disabled={isLoading || transactionApproved}
           sx={{ py: 1.5, mt: 4 }}
         >
-          {loading ? <CircularProgress size={24} /> : "Sign Transaction"}
+          {isLoading ? <CircularProgress size={24} /> : "Sign Transaction"}
         </Button>
         {transactionApproved && (
           <Typography
@@ -148,4 +174,4 @@ const DummySignTransaction = ({
   );
 };
 
-export default DummySignTransaction;
+export default SignTransactionModal;

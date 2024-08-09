@@ -20,7 +20,7 @@ import { useCreateGame } from "@/hooks/api-hooks/useGames";
 import { useLoader } from "@/context/loaderContext";
 import { generateInviteCode } from "@/utils/helper";
 import CreateCelebrationModal from "../createCelebrationModal";
-import DummySignTransaction from "../dummySignTransaction";
+import SignTransactionModal from "../SignTransactionModal";
 
 const questrial = Questrial({
   weight: "400",
@@ -60,11 +60,6 @@ const CreateGameModal = ({ handleClose }) => {
   const [inviteCode, setInviteCode] = useState("");
   const [isCelebrationModalOpen, setIsCelebrationModalOpen] = useState(false);
   const [transactionModalOpen, setTransactionModalOpen] = useState(false);
-  const [isTransactionSigned, setIsTransactionSigned] = useState(false);
-
-  useEffect(() => {
-    if (isTransactionSigned) createGame();
-  }, [isTransactionSigned]);
 
   const createGame = async () => {
     showLoader();
@@ -254,11 +249,12 @@ const CreateGameModal = ({ handleClose }) => {
         handleClose={handleCelebrationModalClose}
         inviteCode={inviteCode}
       />
-      <DummySignTransaction
+      <SignTransactionModal
         open={transactionModalOpen}
         handleClose={() => setTransactionModalOpen(false)}
-        setIsTransactionSigned={setIsTransactionSigned}
+        createGame={createGame}
         type={"CREATE"}
+        betAmount={betAmount}
       />
     </>
   );
