@@ -1,0 +1,30 @@
+.congratsDialogPaper {
+    background-color: #f9f9f9;
+    border-radius: 15px;
+    padding: 20px;
+}
+
+.congratsTitle {
+    font-size: 2.5rem;
+    font-weight: bold;
+    text-align: center;
+    color: #4caf50;
+}
+
+.congratsContent {
+    font-size: 1.2rem;
+    text-align: center;
+    color: #555;
+}
+
+.congratsButton {
+    background-color: #4caf50;
+    color: #fff;
+    font-weight: bold;
+    width: 100%;
+    margin: 10px;
+}
+
+.congratsButton:hover {
+    background-color: #45a049;
+}

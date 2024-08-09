@@ -13,7 +13,13 @@ import {
 } from "@web3auth/solana-provider";
 import { OpenloginAdapter } from "@web3auth/openlogin-adapter";
 import { Web3Auth } from "@web3auth/modal";
-import { Connection, PublicKey } from "@solana/web3.js";
+import {
+  Connection,
+  LAMPORTS_PER_SOL,
+  PublicKey,
+  SystemProgram,
+  Transaction,
+} from "@solana/web3.js";
 import { useSnackbar } from "./snackbarContext";
 import { useConnectUser } from "@/hooks/api-hooks/useUsers";
 import { useAuth } from "./authContext";
@@ -55,6 +61,7 @@ interface Web3AuthContextProps {
   getAccounts: (provider: IProvider) => Promise<string[] | string>;
   getBalance: () => Promise<string>;
   signMessage: (message: string) => Promise<string>;
+  transfer: (recipientAddress: string, amountInSol: number) => Promise<string>;
 }
 
 interface Web3AuthProviderProps {
@@ -115,32 +122,8 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
   };
 
   const createUser = async ({ userInfo, publicKey }) => {
-    const {
-      email,
-      name,
-      profileImage,
-      typeOfLogin,
-      verifier,
-      verifierId,
-      aggregateVerifier,
-      isMfaEnabled,
-      idToken,
-    } = userInfo;
     try {
-      const payload = {
-        email,
-        name,
-        profileImage,
-        typeOfLogin,
-        verifier,
-        verifierId,
-        aggregateVerifier,
-        isMfaEnabled,
-        idToken,
-        publicKey,
-      };
-
-      const res = await connectionMutateAsync(payload);
+      const res = await connectionMutateAsync({ ...userInfo, publicKey });
       loginUser(res.data);
       showMessage(res.message, "success");
     } catch (e) {
@@ -190,7 +173,7 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
 
   const signMessage = async (message: string) => {
     if (!provider) {
-      return "provider not initialized yet";
+      return "Provider is not initialized yet";
     }
     const solanaWallet = new SolanaWallet(provider);
 
@@ -198,6 +181,63 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
     const msgUint8Array = new Uint8Array(msg);
     await solanaWallet.signMessage(msgUint8Array);
     return;
+  };
+
+  // Function to handle SOL transfer
+  const transfer = async (recipientAddress: string, amountInSol: number) => {
+    if (!provider) {
+      throw new Error("Provider is not initialized.");
+    }
+
+    try {
+      const solanaWallet = new SolanaWallet(provider);
+      const accounts = await solanaWallet.requestAccounts();
+
+      const connection = new Connection(chainConfig.rpcTarget);
+      const blockhash = (await connection.getLatestBlockhash("finalized"))
+        .blockhash;
+
+      const senderPublicKey = new PublicKey(accounts[0]);
+      const recipientPublicKey = new PublicKey(recipientAddress);
+
+      // Convert amount from SOL to lamports (1 SOL = 1e9 lamports)
+      const amountInLamports = amountInSol * LAMPORTS_PER_SOL;
+
+      const TransactionInstruction = SystemProgram.transfer({
+        fromPubkey: senderPublicKey,
+        toPubkey: recipientPublicKey,
+        lamports: amountInLamports,
+      });
+
+      const transaction = new Transaction({
+        recentBlockhash: blockhash,
+        feePayer: senderPublicKey,
+      }).add(TransactionInstruction);
+
+      const signedTx = await solanaWallet.signTransaction(transaction);
+      const serializedTx = signedTx.serialize();
+      const signature = await connection.sendRawTransaction(serializedTx, {
+        skipPreflight: false,
+      });
+
+      // Confirm the transaction
+      const confirmation = await connection.confirmTransaction(
+        signature,
+        "confirmed"
+      );
+
+      if (confirmation.value.err) {
+        showMessage("Transaction failed!", "error");
+        throw new Error("Transaction failed!");
+      }
+
+      showMessage("Transfer successful!", "success");
+      return "signature";
+    } catch (error) {
+      console.error("Error during transfer:", error);
+      showMessage("Transfer failed!", "error");
+      throw error;
+    }
   };
 
   return (
@@ -211,6 +251,7 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
         getAccounts,
         getBalance,
         signMessage,
+        transfer,
       }}
     >
       {children}

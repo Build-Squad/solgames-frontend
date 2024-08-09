@@ -20,9 +20,9 @@ import White_Rook from "@/assets/Pieces/White_Rook.svg";
 import { useRouter } from "next/navigation";
 import { useSocket } from "@/context/socketContext";
 import FinalModal from "../../modals/finalModal";
-import { ContentCopy } from "@mui/icons-material";
 import { useSnackbar } from "@/context/snackbarContext";
 import { useAuth } from "@/context/authContext";
+import DrawModal from "@/components/modals/drawModal";
 
 // White small letter, Black big letter
 const pieceImages: { [key: string]: string } = {
@@ -70,12 +70,13 @@ const Chessboard = () => {
   const [capturedWhitePieces, setCapturedWhitePieces] = useState<string[]>([]);
   const [capturedBlackPieces, setCapturedBlackPieces] = useState<string[]>([]);
   const [openFinalModal, setOpenFinalModal] = useState(false);
+  const [openDrawModal, setOpenDrawModal] = useState(false);
   const [playerColor, setPlayerColor] = useState<"w" | "b" | null>(null);
   const [gameId, setGameId] = useState<string | null>(null);
   const [squares, setSquares] = useState<(string | null)[]>(
     Array(64).fill(null)
   );
-  const { socket, setSocket } = useSocket();
+  const { socket } = useSocket();
   const { showMessage } = useSnackbar();
   const { user } = useAuth();
 
@@ -104,19 +105,9 @@ const Chessboard = () => {
 
   useEffect(() => {
     if (socket) {
-      socket.on("gameCreated", (game: any) => {
-        setGameId(game.id);
-        const newChess = new Chess(game.chess);
-        setChess(newChess);
-        updateBoard(newChess);
-        const player = game.players.find(
-          (player: any) => player.id === user.id
-        );
-        setPlayerColor(player.color);
-      });
-
       socket.on("playerJoined", (game: any) => {
         setGameId(game.id);
+        // This is the fen passed from the BE.
         const newChess = new Chess(game.chess);
         setChess(newChess);
         updateBoard(newChess);
@@ -138,10 +129,17 @@ const Chessboard = () => {
         // Game completion errors
         if (message?.errorType == "GAME_OVER") {
           setOpenFinalModal(true);
+          setTimeout(() => {
+            router.push("/my-games");
+          }, 3000);
           return;
         }
         if (message?.errorType == "GAME_DRAW") {
           alert("GAME DRAW");
+          setOpenDrawModal(true);
+          setTimeout(() => {
+            router.push("/my-games");
+          }, 3000);
           return;
         }
         handleShakeScreen();
@@ -393,6 +391,12 @@ const Chessboard = () => {
       </Box>
       {openFinalModal && (
         <FinalModal
+          handleClose={() => null}
+          playerName={`${playerColor}-player`}
+        />
+      )}
+      {openDrawModal && (
+        <DrawModal
           handleClose={() => null}
           playerName={`${playerColor}-player`}
         />

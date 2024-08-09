@@ -1,11 +1,11 @@
-.congrats-dialog-paper {
+.congratsDialogPaper {
     min-height: 60vh;
     background-color: #f9f9f9;
     border-radius: 15px;
     padding: 20px;
 }
 
-.congrats-title {
+.congratsTitle {
     font-size: 2.5rem;
     font-weight: bold;
     text-align: center;
@@ -13,21 +13,21 @@
     margin-bottom: 20px;
 }
 
-.congrats-content {
+.congratsContent {
     font-size: 1.2rem;
     text-align: center;
     color: #555;
     margin-top: 20px;
 }
 
-.congrats-trophy {
+.congratsTrophy {
     width: 100px;
     height: auto;
     display: block;
     margin: 0 auto 20px auto;
 }
 
-.congrats-button {
+.congratsButton {
     background-color: #4caf50;
     color: #fff;
     font-weight: bold;
@@ -35,6 +35,6 @@
     margin: 10px;
 }
 
-.congrats-button:hover {
+.congratsButton:hover {
     background-color: #45a049;
 }

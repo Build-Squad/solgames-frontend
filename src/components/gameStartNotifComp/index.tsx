@@ -130,9 +130,9 @@ const GameStartNotificationComponent: React.FC = () => {
           sx={{
             backgroundColor: "#333",
             color: "#fff",
+            minWidth: "200px",
             "& .MuiAlert-action": {
               color: "#fff",
-              minWidth: "fit-content",
             },
           }}
           action={
@@ -140,7 +140,7 @@ const GameStartNotificationComponent: React.FC = () => {
               <Button
                 color="inherit"
                 onClick={handleShowDetails}
-                sx={{ fontWeight: "bold", py: 1 }}
+                sx={{ fontWeight: "bold", py: 1, minWidth: "140px" }}
               >
                 Show Details
               </Button>

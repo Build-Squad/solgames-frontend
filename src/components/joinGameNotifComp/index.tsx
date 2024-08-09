@@ -9,13 +9,15 @@ import { useState, useEffect, useCallback } from "react";
 import { Game } from "@/types/game";
 import { useGetAllGames } from "@/hooks/api-hooks/useGames";
 import { STATUS_COLORS } from "@/utils/constants";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/authContext";
 import { Divider } from "@mui/material";
 
 const WARNING_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
 
 const JoinGameNotificationComponent: React.FC = () => {
+  const pathname = usePathname();
+
   const router = useRouter();
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
@@ -24,6 +26,7 @@ const JoinGameNotificationComponent: React.FC = () => {
   }>({ open: false, message: "" });
   const [modalOpen, setModalOpen] = useState(false);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
+  const [gameInQueue, setGameInQueue] = useState<Game[]>();
 
   const { user } = useAuth();
   const { data: userGames, updatedRefetch: refetchUserGames } = useGetAllGames(
@@ -46,13 +49,18 @@ const JoinGameNotificationComponent: React.FC = () => {
       const diff = now.getTime() - startTime.getTime();
 
       if (diff >= 0 && diff <= WARNING_DURATION && game.isGameAccepted) {
+        if (gameInQueue) {
+          setGameInQueue([...gameInQueue, game]);
+        } else {
+          setGameInQueue([game]);
+        }
         showSnackbar(
           `Warning! The game with invite code "${game.inviteCode}" has already started. Please join to avoid loosing the game.`,
           game
         );
       }
     });
-  }, [userGames]);
+  }, [userGames, pathname]);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -86,7 +94,8 @@ const JoinGameNotificationComponent: React.FC = () => {
   };
 
   const handleRedirect = () => {
-    router.push("/game");
+    const gameData = gameInQueue?.[0];
+    router.push(`play?inviteCode=${gameData.inviteCode}`);
   };
 
   const formatTimeLeft = (seconds: number | null) => {
@@ -95,6 +104,12 @@ const JoinGameNotificationComponent: React.FC = () => {
     const secs = seconds % 60;
     return `${minutes}:${secs < 10 ? "0" : ""}${secs}`;
   };
+
+  if (pathname.includes("play")) {
+    if (snackbar.open) {
+      handleCloseSnackbar();
+    }
+  }
 
   return (
     <>

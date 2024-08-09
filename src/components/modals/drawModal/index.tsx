@@ -9,8 +9,7 @@ import {
 } from "@mui/material";
 import { TransitionProps } from "@mui/material/transitions";
 import { forwardRef } from "react";
-import styles from "./finalModal.module.css";
-import { EmojiEvents } from "@mui/icons-material";
+import styles from "./drawModal.module.css";
 
 const Transition = forwardRef(function Transition(
   props: TransitionProps & {
@@ -21,7 +20,7 @@ const Transition = forwardRef(function Transition(
   return <Slide direction="up" ref={ref} {...props} />;
 });
 
-const Congratulations = ({ handleClose, playerName }) => {
+const DrawModal = ({ handleClose, playerName }) => {
   const router = useRouter();
 
   const handleClick = () => {
@@ -38,15 +37,14 @@ const Congratulations = ({ handleClose, playerName }) => {
       classes={{ paper: styles.congratsDialogPaper }}
     >
       <DialogTitle>
-        <div className={styles.congratsTitle}>Congratulations!</div>
+        <div className={styles.congratsTitle}>Draw!</div>
       </DialogTitle>
       <DialogContent>
         <div className={styles.congratsContent}>
-          <EmojiEvents style={{ fontSize: "200px" }} />
-          <p>You&rsquo;ve won the game, {playerName}!</p>
+          <p>The game is draw !</p>
           <p>
-            Checkmate! Your strategic moves have led you to victory. Keep up the
-            great play!
+            The game is draw! It was an amazing match between you two folks.
+            Navigate to home screen to join or create new tournament.
           </p>
         </div>
       </DialogContent>
@@ -59,4 +57,4 @@ const Congratulations = ({ handleClose, playerName }) => {
   );
 };
 
-export default Congratulations;
+export default DrawModal;
