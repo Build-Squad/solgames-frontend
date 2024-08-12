@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
-import { Box, Typography } from "@mui/material";
+import { Box, Snackbar, Typography } from "@mui/material";
 import { Chess, Square as ChessSquare } from "chess.js";
 import PlayerComp from "@/components/playComponents/playerComp";
 import Image from "next/image";
@@ -23,6 +23,11 @@ import FinalModal from "../../modals/finalModal";
 import { useSnackbar } from "@/context/snackbarContext";
 import { useAuth } from "@/context/authContext";
 import DrawModal from "@/components/modals/drawModal";
+import MoveWarningSnackbar, {
+  WARNING_TIME_IN_SECONDS,
+} from "../moveWarningSnackbar";
+
+const PLAYER_TURN_TIME = 240;
 
 // White small letter, Black big letter
 const pieceImages: { [key: string]: string } = {
@@ -55,6 +60,13 @@ const getBorderRadiusClass = (index: number, isWhitePlayer: boolean) => {
   }
 };
 
+const TIMEOUT_ERRORS = {
+  EXCEED_TIMEOUT_COUNT:
+    "You've lost the game due to inactivity for more than 3 times.",
+  INACTIVITY_EXHAUST:
+    "You have lost the game as you were inactive for way too long!",
+};
+
 const indexToSquare = (index: number): ChessSquare => {
   const file = String.fromCharCode(97 + (index % 8));
   const rank = 8 - Math.floor(index / 8);
@@ -76,11 +88,54 @@ const Chessboard = () => {
   const [squares, setSquares] = useState<(string | null)[]>(
     Array(64).fill(null)
   );
+  const [turnTimer, setTurnTimer] = useState(PLAYER_TURN_TIME);
+  const [activePlayer, setActivePlayer] = useState<"w" | "b" | null>(null);
+  const [gameStarted, setGameStarted] = useState(false);
+  const [showMoveWarning, setShowMoveWarning] = useState(false);
+  const [timeoutCount, setTimeoutCount] = useState(0);
+
   const { socket } = useSocket();
   const { showMessage } = useSnackbar();
   const { user } = useAuth();
 
   const isWhitePlayer = playerColor == "w";
+
+  const handleInactivity = (type: keyof typeof TIMEOUT_ERRORS) => {
+    // In this case, the other person would've won the game so handle that situation as well.
+    showMessage(TIMEOUT_ERRORS[type], "error");
+    setTimeout(() => {
+      router.push("/");
+    }, 3000);
+  };
+
+  // This is for the 4 minute timer for each player starting once both the player's have joined.
+  useEffect(() => {
+    if (gameStarted) {
+      const timer = setInterval(() => {
+        if (activePlayer === chess.turn()) {
+          setTurnTimer((prev) => {
+            // If the 4 minute is complete, i.e. timer reaches zero.
+            if (prev <= 1) {
+              // If there's an active player, and the current player color is the one who's turn is there.
+              if (activePlayer && playerColor == chess.turn()) {
+                if (timeoutCount > 2) {
+                  handleInactivity("EXCEED_TIMEOUT_COUNT");
+                } else {
+                  setShowMoveWarning(true);
+                  setTimeoutCount((prev) => prev + 1);
+                }
+              }
+              clearInterval(timer);
+              return 0;
+            }
+            return prev - 1;
+          });
+        }
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }
+  }, [activePlayer, chess.turn(), gameStarted]);
 
   const updateBoard = useCallback((chessInstance: Chess) => {
     const newSquares = Array(64).fill(null);
@@ -115,6 +170,10 @@ const Chessboard = () => {
           (player: any) => player.id === user.id
         );
         setPlayerColor(player.color);
+        setActivePlayer(newChess.turn());
+        if (game.players.length === 2) {
+          setGameStarted(true);
+        }
       });
 
       socket.on("moveMade", (game: any) => {
@@ -123,6 +182,9 @@ const Chessboard = () => {
         updateBoard(newChess);
         setCapturedWhitePieces(game.capturedWhitePieces);
         setCapturedBlackPieces(game.capturedBlackPieces);
+
+        setActivePlayer(newChess.turn());
+        setTurnTimer(PLAYER_TURN_TIME);
       });
 
       socket.on("error", (message) => {
@@ -182,6 +244,8 @@ const Chessboard = () => {
     socket?.emit("makeMove", { gameId, move, userId: user.id });
     setPossibleMoves([]);
     setSelectedSquare(null);
+
+    handleCloseSnackbar();
   };
 
   const handleSquareClick = (index: number) => {
@@ -229,8 +293,34 @@ const Chessboard = () => {
 
     return piece && possibleMoves.includes(fromSquare);
   };
+
+  // Format timer
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${minutes.toString().padStart(2, "0")}:${secs
+      .toString()
+      .padStart(2, "0")}`;
+  };
+
+  // Move Warning logic
+
+  const handleCloseSnackbar = () => {
+    setShowMoveWarning(false);
+  };
+
+  const handleTimeout = () => {
+    handleCloseSnackbar();
+    handleInactivity("INACTIVITY_EXHAUST");
+  };
+
   return (
     <>
+      <Box
+        sx={{ backgroundColor: "white", textAlign: "center", fontSize: "20px" }}
+      >
+        Ideal count - {timeoutCount}/3
+      </Box>
       <Box
         sx={{
           display: "flex",
@@ -261,6 +351,7 @@ const Chessboard = () => {
                       (piece) => pieceImages[piece.toUpperCase()]
                     ),
                   ]}
+                  timer={activePlayer === "b" ? formatTime(turnTimer) : null}
                 />
               </Box>
               <Box
@@ -281,6 +372,7 @@ const Chessboard = () => {
                       (piece) => pieceImages[piece.toLowerCase()]
                     ),
                   ]}
+                  timer={activePlayer === "w" ? formatTime(turnTimer) : null}
                 />
               </Box>
             </>
@@ -304,6 +396,7 @@ const Chessboard = () => {
                       (piece) => pieceImages[piece.toLowerCase()]
                     ),
                   ]}
+                  timer={activePlayer === "w" ? formatTime(turnTimer) : null}
                 />
               </Box>
               <Box
@@ -324,6 +417,7 @@ const Chessboard = () => {
                       (piece) => pieceImages[piece.toUpperCase()]
                     ),
                   ]}
+                  timer={activePlayer === "b" ? formatTime(turnTimer) : null}
                 />
               </Box>
             </>
@@ -399,6 +493,14 @@ const Chessboard = () => {
         <DrawModal
           handleClose={() => null}
           playerName={`${playerColor}-player`}
+        />
+      )}
+      {showMoveWarning && (
+        <MoveWarningSnackbar
+          open={showMoveWarning}
+          onClose={handleCloseSnackbar}
+          initialTime={WARNING_TIME_IN_SECONDS}
+          onTimeout={handleTimeout}
         />
       )}
     </>
