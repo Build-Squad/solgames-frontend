@@ -1,6 +1,6 @@
 "use client";
 import { Backdrop, Box, CircularProgress } from "@mui/material";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Chessboard from "@/components/playComponents/chessboard";
 import { useGetGameWithInviteCode } from "@/hooks/api-hooks/useGames";
 import { useSearchParams } from "next/navigation";
@@ -9,6 +9,7 @@ import { useSnackbar } from "@/context/snackbarContext";
 import { useAuth } from "@/context/authContext";
 import { STATUS_COLORS } from "@/utils/constants";
 import { useSocket } from "@/context/socketContext";
+import GameInstructionModal from "@/components/modals/gameInstructionModal";
 
 type Props = {};
 
@@ -17,6 +18,9 @@ export default function Play({}: Props) {
   const router = useRouter();
   const { user } = useAuth();
   const { socket } = useSocket();
+  const [isInstructionModalOpen, setIsInstructionModalOpen] = useState(true);
+
+  const handleCloseModal = () => setIsInstructionModalOpen(false);
 
   const inviteCode = searchParams.get("inviteCode");
 
@@ -89,7 +93,14 @@ export default function Play({}: Props) {
           width: "100%",
         }}
       >
-        <Chessboard />
+        {isInstructionModalOpen ? (
+          <GameInstructionModal
+            open={isInstructionModalOpen}
+            onClose={handleCloseModal}
+          />
+        ) : (
+          <Chessboard />
+        )}
       </Box>
     </Box>
   );
