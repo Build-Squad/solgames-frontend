@@ -19,13 +19,14 @@ import White_Queen from "@/assets/Pieces/White_Queen.svg";
 import White_Rook from "@/assets/Pieces/White_Rook.svg";
 import { useRouter } from "next/navigation";
 import { useSocket } from "@/context/socketContext";
-import FinalModal from "../../modals/finalModal";
+import WinnerModal from "../../modals/winnerModal";
 import { useSnackbar } from "@/context/snackbarContext";
 import { useAuth } from "@/context/authContext";
 import DrawModal from "@/components/modals/drawModal";
 import MoveWarningSnackbar, {
   WARNING_TIME_IN_SECONDS,
 } from "../moveWarningSnackbar";
+import LooserModal from "@/components/modals/looserModal";
 
 const PLAYER_TURN_TIME = 240;
 
@@ -75,21 +76,30 @@ const indexToSquare = (index: number): ChessSquare => {
 
 const Chessboard = () => {
   const router = useRouter();
+
+  // State related to chessboard
   const [chess, setChess] = useState(new Chess());
   const [shake, setShake] = useState(false);
   const [selectedSquare, setSelectedSquare] = useState<number | null>(null);
   const [possibleMoves, setPossibleMoves] = useState<ChessSquare[]>([]);
   const [capturedWhitePieces, setCapturedWhitePieces] = useState<string[]>([]);
   const [capturedBlackPieces, setCapturedBlackPieces] = useState<string[]>([]);
-  const [openFinalModal, setOpenFinalModal] = useState(false);
-  const [openDrawModal, setOpenDrawModal] = useState(false);
-  const [playerColor, setPlayerColor] = useState<"w" | "b" | null>(null);
-  const [gameId, setGameId] = useState<string | null>(null);
   const [squares, setSquares] = useState<(string | null)[]>(
     Array(64).fill(null)
   );
-  const [turnTimer, setTurnTimer] = useState(PLAYER_TURN_TIME);
+
+  // State related to game completion
+  const [openWinnerModal, setOpenWinnerModal] = useState(false);
+  const [openLooserModal, setOpenLooserModal] = useState(false);
+  const [openDrawModal, setOpenDrawModal] = useState(false);
+
+  // State related to player's and game
+  const [playerColor, setPlayerColor] = useState<"w" | "b" | null>(null);
+  const [gameId, setGameId] = useState<string | null>(null);
   const [activePlayer, setActivePlayer] = useState<"w" | "b" | null>(null);
+
+  // State related to timer and game starting
+  const [turnTimer, setTurnTimer] = useState(PLAYER_TURN_TIME);
   const [gameStarted, setGameStarted] = useState(false);
   const [showMoveWarning, setShowMoveWarning] = useState(false);
   const [timeoutCount, setTimeoutCount] = useState(0);
@@ -103,9 +113,7 @@ const Chessboard = () => {
   const handleInactivity = (type: keyof typeof TIMEOUT_ERRORS) => {
     // In this case, the other person would've won the game so handle that situation as well.
     showMessage(TIMEOUT_ERRORS[type], "error");
-    setTimeout(() => {
-      router.push("/");
-    }, 3000);
+    // Handle winner and looser modal due to game forfeiting.
   };
 
   // This is for the 4 minute timer for each player starting once both the player's have joined.
@@ -190,18 +198,18 @@ const Chessboard = () => {
       socket.on("error", (message) => {
         // Game completion errors
         if (message?.errorType == "GAME_OVER") {
-          setOpenFinalModal(true);
-          setTimeout(() => {
-            router.push("/my-games");
-          }, 3000);
+          if (playerColor) {
+            // Handling winner and loser modals, the person who made the move is the winner.
+            if (playerColor == chess.turn()) {
+              setOpenWinnerModal(true);
+            } else {
+              setOpenLooserModal(true);
+            }
+          }
           return;
         }
         if (message?.errorType == "GAME_DRAW") {
-          alert("GAME DRAW");
           setOpenDrawModal(true);
-          setTimeout(() => {
-            router.push("/my-games");
-          }, 3000);
           return;
         }
         handleShakeScreen();
@@ -219,7 +227,7 @@ const Chessboard = () => {
         }
       });
     }
-  }, [socket, updateBoard, handleShakeScreen]);
+  }, [socket, updateBoard, handleShakeScreen, playerColor]);
 
   const handleSquareSelection = (index: number) => {
     const fromSquare = indexToSquare(index);
@@ -483,8 +491,14 @@ const Chessboard = () => {
           You are {playerColor == "w" ? "White Player" : "Black Player"}
         </Typography>
       </Box>
-      {openFinalModal && (
-        <FinalModal
+      {openWinnerModal && (
+        <WinnerModal
+          handleClose={() => null}
+          playerName={`${playerColor}-player`}
+        />
+      )}
+      {openLooserModal && (
+        <LooserModal
           handleClose={() => null}
           playerName={`${playerColor}-player`}
         />

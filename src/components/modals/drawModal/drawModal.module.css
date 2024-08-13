@@ -1,30 +1,28 @@
-.congratsDialogPaper {
-    background-color: #f9f9f9;
-    border-radius: 15px;
+/* drawModal.module.css */
+
+.drawDialogPaper {
+    background-color: #f8f9fa; /* Light grey background for a neutral and balanced look */
+    color: #343a40; /* Dark grey text color for readability */
+  }
+  
+  .drawTitle {
+    color: #343a40; /* Dark grey color for title */
+    font-size: 24px;
+    font-weight: bold;
+    text-align: center;
+  }
+  
+  .drawContent {
+    text-align: center;
     padding: 20px;
-}
-
-.congratsTitle {
-    font-size: 2.5rem;
+  }
+  
+  .drawButton {
+    background-color: #e9ecef; /* Very light grey button color */
+    color: #343a40; /* Dark grey text color */
     font-weight: bold;
-    text-align: center;
-    color: #4caf50;
-}
-
-.congratsContent {
-    font-size: 1.2rem;
-    text-align: center;
-    color: #555;
-}
-
-.congratsButton {
-    background-color: #4caf50;
-    color: #fff;
-    font-weight: bold;
-    width: 100%;
-    margin: 10px;
-}
-
-.congratsButton:hover {
-    background-color: #45a049;
-}
+    &:hover {
+      background-color: #ced4da; /* Slightly darker grey on hover */
+    }
+  }
+  

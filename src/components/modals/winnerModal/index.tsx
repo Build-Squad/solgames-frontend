@@ -9,8 +9,8 @@ import {
 } from "@mui/material";
 import { TransitionProps } from "@mui/material/transitions";
 import { forwardRef } from "react";
-import styles from "./drawModal.module.css";
-import { Balance } from "@mui/icons-material"; // Use Balance icon for a neutral look
+import styles from "./winnerModal.module.css";
+import { EmojiEvents } from "@mui/icons-material";
 
 const Transition = forwardRef(function Transition(
   props: TransitionProps & {
@@ -21,7 +21,7 @@ const Transition = forwardRef(function Transition(
   return <Slide direction="up" ref={ref} {...props} />;
 });
 
-const DrawModal = ({ handleClose, playerName }) => {
+const WinnerModal = ({ handleClose, playerName }) => {
   const router = useRouter();
 
   const handleClick = () => {
@@ -40,23 +40,23 @@ const DrawModal = ({ handleClose, playerName }) => {
       TransitionComponent={Transition}
       fullWidth={true}
       maxWidth="md"
-      classes={{ paper: styles.drawDialogPaper }}
+      classes={{ paper: styles.congratsDialogPaper }}
     >
       <DialogTitle>
-        <div className={styles.drawTitle}>Game Drawn</div>
+        <div className={styles.congratsTitle}>Congratulations!</div>
       </DialogTitle>
       <DialogContent>
-        <div className={styles.drawContent}>
-          <Balance style={{ fontSize: "200px", color: "#4b6cb7" }} />{" "}
-          <p>The game ended in a draw.</p>
+        <div className={styles.congratsContent}>
+          <EmojiEvents style={{ fontSize: "200px" }} />
+          <p>You&rsquo;ve won the game, {playerName}!</p>
           <p>
-            Both players showed great skill. Go to the home screen to join or
-            create a new game.
+            Checkmate! Your strategic moves have led you to victory. Keep up the
+            great play!
           </p>
         </div>
       </DialogContent>
       <DialogActions>
-        <Button className={styles.drawButton} onClick={handleClick}>
+        <Button className={styles.congratsButton} onClick={handleClick}>
           Continue
         </Button>
       </DialogActions>
@@ -64,4 +64,4 @@ const DrawModal = ({ handleClose, playerName }) => {
   );
 };
 
-export default DrawModal;
+export default WinnerModal;
