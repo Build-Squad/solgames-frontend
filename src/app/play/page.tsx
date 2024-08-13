@@ -31,11 +31,12 @@ export default function Play({}: Props) {
     if (
       socket &&
       gameData?.success &&
-      gameData?.data?.gameStatus == STATUS_COLORS.InProgress.value
+      gameData?.data?.gameStatus == STATUS_COLORS.InProgress.value &&
+      !isInstructionModalOpen
     ) {
       socket.emit("joinGame", { userId: user?.id, gameCode: inviteCode });
     }
-  }, [user, inviteCode, gameData, socket]);
+  }, [user, inviteCode, gameData, socket, isInstructionModalOpen]);
 
   if (!isLoading && !!gameData) {
     let hasError = false;
