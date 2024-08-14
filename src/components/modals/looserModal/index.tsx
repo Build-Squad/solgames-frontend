@@ -21,7 +21,7 @@ const Transition = forwardRef(function Transition(
   return <Slide direction="up" ref={ref} {...props} />;
 });
 
-const LoserModal = ({ handleClose, playerName }) => {
+const LoserModal = ({ handleClose, content }) => {
   const router = useRouter();
 
   const handleClick = () => {
@@ -48,11 +48,7 @@ const LoserModal = ({ handleClose, playerName }) => {
       <DialogContent>
         <div className={styles.sorryContent}>
           <SentimentDissatisfied style={{ fontSize: "200px" }} />
-          <p>Sorry, {playerName}. You&rsquo;ve lost the game.</p>
-          <p>
-            Despite the loss, remember that every game is a learning
-            opportunity. Analyze your moves and come back stronger!
-          </p>
+          {content}
         </div>
       </DialogContent>
       <DialogActions>

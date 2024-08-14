@@ -21,7 +21,7 @@ const Transition = forwardRef(function Transition(
   return <Slide direction="up" ref={ref} {...props} />;
 });
 
-const WinnerModal = ({ handleClose, playerName }) => {
+const WinnerModal = ({ handleClose, content }) => {
   const router = useRouter();
 
   const handleClick = () => {
@@ -48,11 +48,7 @@ const WinnerModal = ({ handleClose, playerName }) => {
       <DialogContent>
         <div className={styles.congratsContent}>
           <EmojiEvents style={{ fontSize: "200px" }} />
-          <p>You&rsquo;ve won the game, {playerName}!</p>
-          <p>
-            Checkmate! Your strategic moves have led you to victory. Keep up the
-            great play!
-          </p>
+          {content}
         </div>
       </DialogContent>
       <DialogActions>

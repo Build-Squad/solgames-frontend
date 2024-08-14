@@ -28,7 +28,7 @@ import MoveWarningSnackbar, {
 } from "../moveWarningSnackbar";
 import LooserModal from "@/components/modals/looserModal";
 
-const PLAYER_TURN_TIME = 240;
+const PLAYER_TURN_TIME = 10;
 
 // White small letter, Black big letter
 const pieceImages: { [key: string]: string } = {
@@ -74,6 +74,14 @@ const indexToSquare = (index: number): ChessSquare => {
   return `${file}${rank}` as ChessSquare;
 };
 
+const formatTime = (seconds: number) => {
+  const minutes = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${minutes.toString().padStart(2, "0")}:${secs
+    .toString()
+    .padStart(2, "0")}`;
+};
+
 const Chessboard = () => {
   const router = useRouter();
 
@@ -89,9 +97,15 @@ const Chessboard = () => {
   );
 
   // State related to game completion
-  const [openWinnerModal, setOpenWinnerModal] = useState(false);
-  const [openLooserModal, setOpenLooserModal] = useState(false);
   const [openDrawModal, setOpenDrawModal] = useState(false);
+  const [winnerModalData, setWinnerModalData] = useState({
+    state: false,
+    content: <></>,
+  });
+  const [looserModalData, setLooserModalData] = useState({
+    state: false,
+    content: <></>,
+  });
 
   // State related to player's and game
   const [playerColor, setPlayerColor] = useState<"w" | "b" | null>(null);
@@ -111,9 +125,9 @@ const Chessboard = () => {
   const isWhitePlayer = playerColor == "w";
 
   const handleInactivity = (type: keyof typeof TIMEOUT_ERRORS) => {
-    // In this case, the other person would've won the game so handle that situation as well.
-    showMessage(TIMEOUT_ERRORS[type], "error");
-    // Handle winner and looser modal due to game forfeiting.
+    // In this case, the other person would've and we call socket to end the game.
+    showMessage(TIMEOUT_ERRORS[type], "error", 10000);
+    socket?.emit("inactiveUser", { gameId, userId: user.id });
   };
 
   // This is for the 4 minute timer for each player starting once both the player's have joined.
@@ -145,6 +159,7 @@ const Chessboard = () => {
     }
   }, [activePlayer, chess.turn(), gameStarted]);
 
+  // Board related logic and functions
   const updateBoard = useCallback((chessInstance: Chess) => {
     const newSquares = Array(64).fill(null);
     chessInstance.board().forEach((row, rowIndex) => {
@@ -165,69 +180,6 @@ const Chessboard = () => {
     setShake(true);
     setTimeout(() => setShake(false), 1000);
   }, []);
-
-  useEffect(() => {
-    if (socket) {
-      socket.on("playerJoined", (game: any) => {
-        setGameId(game.id);
-        // This is the fen passed from the BE.
-        const newChess = new Chess(game.chess);
-        setChess(newChess);
-        updateBoard(newChess);
-        const player = game.players.find(
-          (player: any) => player.id === user.id
-        );
-        setPlayerColor(player.color);
-        setActivePlayer(newChess.turn());
-        if (game.players.length === 2) {
-          setGameStarted(true);
-        }
-      });
-
-      socket.on("moveMade", (game: any) => {
-        const newChess = new Chess(game.chess);
-        setChess(newChess);
-        updateBoard(newChess);
-        setCapturedWhitePieces(game.capturedWhitePieces);
-        setCapturedBlackPieces(game.capturedBlackPieces);
-
-        setActivePlayer(newChess.turn());
-        setTurnTimer(PLAYER_TURN_TIME);
-      });
-
-      socket.on("error", (message) => {
-        // Game completion errors
-        if (message?.errorType == "GAME_OVER") {
-          if (playerColor) {
-            // Handling winner and loser modals, the person who made the move is the winner.
-            if (playerColor == chess.turn()) {
-              setOpenWinnerModal(true);
-            } else {
-              setOpenLooserModal(true);
-            }
-          }
-          return;
-        }
-        if (message?.errorType == "GAME_DRAW") {
-          setOpenDrawModal(true);
-          return;
-        }
-        handleShakeScreen();
-        showMessage(message?.errorMessage, "error");
-
-        // Error while connecting to a game
-        if (
-          message?.errorType == "GAME_EXISTS" ||
-          message?.errorType == "GAME_NOT_FOUND" ||
-          message?.errorType == "LOBBY_FULL"
-        ) {
-          setTimeout(() => {
-            router.push("/");
-          }, 3000);
-        }
-      });
-    }
-  }, [socket, updateBoard, handleShakeScreen, playerColor]);
 
   const handleSquareSelection = (index: number) => {
     const fromSquare = indexToSquare(index);
@@ -291,10 +243,6 @@ const Chessboard = () => {
     }
   };
 
-  useEffect(() => {
-    updateBoard(chess);
-  }, [updateBoard, chess]);
-
   const doesPossibleMoveCutsPiece = (index: number) => {
     const fromSquare = indexToSquare(index);
     const piece = chess.get(fromSquare);
@@ -302,17 +250,143 @@ const Chessboard = () => {
     return piece && possibleMoves.includes(fromSquare);
   };
 
-  // Format timer
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${minutes.toString().padStart(2, "0")}:${secs
-      .toString()
-      .padStart(2, "0")}`;
-  };
+  useEffect(() => {
+    updateBoard(chess);
+  }, [updateBoard, chess]);
 
-  // Move Warning logic
+  // Handling socket events from the backend and errors
+  useEffect(() => {
+    if (socket) {
+      socket.on("playerJoined", (game: any) => {
+        setGameId(game.id);
+        // This is the fen passed from the BE.
+        const newChess = new Chess(game.chess);
+        setChess(newChess);
+        updateBoard(newChess);
+        const player = game.players.find(
+          (player: any) => player.id === user.id
+        );
+        setPlayerColor(player.color);
+        setActivePlayer(newChess.turn());
+        if (game.players.length === 2) {
+          setGameStarted(true);
+        }
+      });
 
+      socket.on("moveMade", (game: any) => {
+        const newChess = new Chess(game.chess);
+        setChess(newChess);
+        updateBoard(newChess);
+        setCapturedWhitePieces(game.capturedWhitePieces);
+        setCapturedBlackPieces(game.capturedBlackPieces);
+
+        setActivePlayer(newChess.turn());
+        setTurnTimer(PLAYER_TURN_TIME);
+      });
+
+      // Handling not only the errors but, game completion, game forfeiting as well
+      socket.on("error", (message) => {
+        // Game completion errors
+        if (message?.errorType == "GAME_OVER") {
+          if (playerColor) {
+            // Handling winner and loser modals, the person who made the move is the winner.
+            if (playerColor == chess.turn()) {
+              setWinnerModalData({
+                state: true,
+                content: (
+                  <>
+                    <p>
+                      You&rsquo;ve won the game,{" "}
+                      {playerColor == "b" ? "black" : "white"} player!
+                    </p>
+                    <p>
+                      Checkmate! Your strategic moves have led you to victory.
+                      Keep up the great play!
+                    </p>
+                  </>
+                ),
+              });
+            } else {
+              setLooserModalData({
+                state: true,
+                content: (
+                  <>
+                    <p>
+                      Sorry, {playerColor == "b" ? "white" : "black"} player.
+                      You&rsquo;ve lost the game.
+                    </p>
+                    <p>
+                      Despite the loss, remember that every game is a learning
+                      opportunity. Analyze your moves and come back stronger!
+                    </p>
+                  </>
+                ),
+              });
+            }
+          }
+          return;
+        }
+        if (message?.errorType == "INACTIVE_USER") {
+          if (playerColor) {
+            // Handling winner and loser modals, the person who made the move is the winner.
+            if (playerColor == chess.turn()) {
+              setLooserModalData({
+                state: true,
+                content: (
+                  <>
+                    <p>
+                      Sorry, {playerColor == "b" ? "white" : "black"} player.
+                      You&rsquo;ve lost the game.
+                    </p>
+                    <p>
+                      Due to the inactivity rule breach, You&apos;ve lost the
+                      game. Better luck next time.
+                    </p>
+                  </>
+                ),
+              });
+            } else {
+              setWinnerModalData({
+                state: true,
+                content: (
+                  <>
+                    <p>
+                      You&rsquo;ve won the game,{" "}
+                      {playerColor == "b" ? "black" : "white"} player!
+                    </p>
+                    <p>
+                      As the other player has exceeded their time limit.
+                      You&apos;ve been declared as a winnner
+                    </p>
+                  </>
+                ),
+              });
+            }
+          }
+          return;
+        }
+        if (message?.errorType == "GAME_DRAW") {
+          setOpenDrawModal(true);
+          return;
+        }
+        handleShakeScreen();
+        showMessage(message?.errorMessage, "error");
+
+        // Error while connecting to a game
+        if (
+          message?.errorType == "GAME_EXISTS" ||
+          message?.errorType == "GAME_NOT_FOUND" ||
+          message?.errorType == "LOBBY_FULL"
+        ) {
+          setTimeout(() => {
+            router.push("/");
+          }, 3000);
+        }
+      });
+    }
+  }, [socket, updateBoard, handleShakeScreen, playerColor]);
+
+  // Turn Warning logic
   const handleCloseSnackbar = () => {
     setShowMoveWarning(false);
   };
@@ -491,16 +565,16 @@ const Chessboard = () => {
           You are {playerColor == "w" ? "White Player" : "Black Player"}
         </Typography>
       </Box>
-      {openWinnerModal && (
+      {winnerModalData?.state && (
         <WinnerModal
           handleClose={() => null}
-          playerName={`${playerColor}-player`}
+          content={winnerModalData?.content}
         />
       )}
-      {openLooserModal && (
+      {looserModalData?.state && (
         <LooserModal
           handleClose={() => null}
-          playerName={`${playerColor}-player`}
+          content={looserModalData?.content}
         />
       )}
       {openDrawModal && (
