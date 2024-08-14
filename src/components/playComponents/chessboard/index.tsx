@@ -127,7 +127,7 @@ const Chessboard = () => {
   const handleInactivity = (type: keyof typeof TIMEOUT_ERRORS) => {
     // In this case, the other person would've and we call socket to end the game.
     showMessage(TIMEOUT_ERRORS[type], "error", 10000);
-    socket?.emit("inactiveUser", { gameId, userId: user.id });
+    socket?.emit("inactiveUser", { gameId });
   };
 
   // This is for the 4 minute timer for each player starting once both the player's have joined.
@@ -290,7 +290,7 @@ const Chessboard = () => {
         if (message?.errorType == "GAME_OVER") {
           if (playerColor) {
             // Handling winner and loser modals, the person who made the move is the winner.
-            if (playerColor == chess.turn()) {
+            if (playerColor == activePlayer) {
               setWinnerModalData({
                 state: true,
                 content: (
@@ -312,7 +312,7 @@ const Chessboard = () => {
                 content: (
                   <>
                     <p>
-                      Sorry, {playerColor == "b" ? "white" : "black"} player.
+                      Sorry, {playerColor == "b" ? "black" : "white"} player.
                       You&rsquo;ve lost the game.
                     </p>
                     <p>
@@ -329,7 +329,7 @@ const Chessboard = () => {
         if (message?.errorType == "INACTIVE_USER") {
           if (playerColor) {
             // Handling winner and loser modals, the person who made the move is the winner.
-            if (playerColor == chess.turn()) {
+            if (playerColor == message?.currentPlayer) {
               setLooserModalData({
                 state: true,
                 content: (
@@ -433,7 +433,16 @@ const Chessboard = () => {
                       (piece) => pieceImages[piece.toUpperCase()]
                     ),
                   ]}
-                  timer={activePlayer === "b" ? formatTime(turnTimer) : null}
+                  timer={
+                    activePlayer === "b" &&
+                    !(
+                      looserModalData.state ||
+                      winnerModalData.state ||
+                      openDrawModal
+                    )
+                      ? formatTime(turnTimer)
+                      : null
+                  }
                 />
               </Box>
               <Box
@@ -454,7 +463,16 @@ const Chessboard = () => {
                       (piece) => pieceImages[piece.toLowerCase()]
                     ),
                   ]}
-                  timer={activePlayer === "w" ? formatTime(turnTimer) : null}
+                  timer={
+                    activePlayer === "w" &&
+                    !(
+                      looserModalData.state ||
+                      winnerModalData.state ||
+                      openDrawModal
+                    )
+                      ? formatTime(turnTimer)
+                      : null
+                  }
                 />
               </Box>
             </>
@@ -585,7 +603,10 @@ const Chessboard = () => {
       )}
       {showMoveWarning && (
         <MoveWarningSnackbar
-          open={showMoveWarning}
+          open={
+            showMoveWarning &&
+            !(looserModalData.state || winnerModalData.state || openDrawModal)
+          }
           onClose={handleCloseSnackbar}
           initialTime={WARNING_TIME_IN_SECONDS}
           onTimeout={handleTimeout}

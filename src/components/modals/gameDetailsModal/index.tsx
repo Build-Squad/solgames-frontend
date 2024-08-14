@@ -69,7 +69,13 @@ const GameDetailsDialog: React.FC<GameDetailsDialogProps> = ({
   useEffect(() => {
     const gameDate = new Date(game.gameDateTime);
     const interval = setInterval(() => {
-      setTimeLeft(differenceInSeconds(gameDate, new Date()));
+      const newTimeLeft = differenceInSeconds(gameDate, new Date());
+      if (newTimeLeft <= 0) {
+        setTimeLeft(0);
+        clearInterval(interval);
+      } else {
+        setTimeLeft(newTimeLeft);
+      }
     }, 1000);
 
     return () => clearInterval(interval);
@@ -134,12 +140,14 @@ const GameDetailsDialog: React.FC<GameDetailsDialogProps> = ({
         }}
       >
         <Grid container spacing={2}>
-          <Grid item xs={6} display="flex" columnGap={2}>
-            <Typography variant="subtitle1" fontWeight="bold">
-              ID:
-            </Typography>
-            <Typography>{game?.id}</Typography>
-          </Grid>
+          {game?.gameStatus == STATUS_COLORS.Completed.value ? (
+            <Grid item xs={6} display="flex" columnGap={2}>
+              <Typography variant="subtitle1" fontWeight="bold">
+                Winner:
+              </Typography>
+              <Typography>{game?.winnerId}</Typography>
+            </Grid>
+          ) : null}
           <Grid item xs={6} display="flex" columnGap={2}>
             <Typography variant="subtitle1" fontWeight="bold">
               Bet Amount:
