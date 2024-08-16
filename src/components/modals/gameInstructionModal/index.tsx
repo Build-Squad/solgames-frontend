@@ -1,4 +1,3 @@
-// components/InfoModal.tsx
 import React from "react";
 import {
   Dialog,
@@ -13,17 +12,66 @@ import {
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import InfoIcon from "@mui/icons-material/Info";
+import { useAuth } from "@/context/authContext";
+import { useWeb3Auth } from "@/context/web3AuthProvider";
+import { useSnackbar } from "@/context/snackbarContext";
+import { useRouter } from "next/navigation";
+import { PublicKey } from "@solana/web3.js";
 
-const InfoModal: React.FC<{ open: boolean; onClose: () => void }> = ({
-  open,
-  onClose,
-}) => {
+const GameInstructionModal: React.FC<{
+  open: boolean;
+  acceptorPubKey: string;
+  creatorPubKey: string;
+  onClose: () => void;
+}> = ({ open, onClose, acceptorPubKey, creatorPubKey }) => {
+  const router = useRouter();
+  const { user } = useAuth();
+  const { showMessage } = useSnackbar();
+
+  // Check weather the person who sign's the game rules is the person who's game it is
+  // In this we'll check both the player, if any of the player's public key signs, we let them in.
+
+  const { signMessage, verifySignature } = useWeb3Auth();
+
+  const handleSignMessage = async () => {
+    if (user?.publicKey) {
+      let isValid = false;
+      const { base64Signature, message } = await signMessage();
+      if (acceptorPubKey) {
+        isValid =
+          isValid ||
+          verifySignature(
+            message,
+            base64Signature,
+            new PublicKey(acceptorPubKey)
+          );
+      }
+      if (creatorPubKey) {
+        isValid =
+          isValid ||
+          verifySignature(
+            message,
+            base64Signature,
+            new PublicKey(creatorPubKey)
+          );
+      }
+      if (isValid) onClose();
+      else {
+        showMessage(
+          "You're not a valid user for this game! Error from signing the message!",
+          "error"
+        );
+        router.push("my-games");
+      }
+    }
+  };
+
   return (
     <Dialog
       open={open}
       disableEscapeKeyDown
       onClose={(event, reason) => {
-        if (reason === 'backdropClick') {
+        if (reason === "backdropClick") {
           return;
         }
         onClose();
@@ -49,13 +97,6 @@ const InfoModal: React.FC<{ open: boolean; onClose: () => void }> = ({
         <InfoIcon sx={{ mr: 1 }} />
         Game Rules and Regulations
         <Box sx={{ flexGrow: 1 }} />
-        <IconButton
-          onClick={onClose}
-          aria-label="close"
-          sx={{ color: "#ffffff" }}
-        >
-          <CloseIcon />
-        </IconButton>
       </DialogTitle>
       <DialogContent
         sx={{
@@ -109,7 +150,7 @@ const InfoModal: React.FC<{ open: boolean; onClose: () => void }> = ({
               backgroundColor: "#FF5C00",
             },
           }}
-          onClick={onClose}
+          onClick={handleSignMessage}
         >
           I Understood!
         </Button>
@@ -118,4 +159,4 @@ const InfoModal: React.FC<{ open: boolean; onClose: () => void }> = ({
   );
 };
 
-export default InfoModal;
+export default GameInstructionModal;

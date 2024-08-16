@@ -98,6 +98,8 @@ export default function Play({}: Props) {
           <GameInstructionModal
             open={isInstructionModalOpen}
             onClose={handleCloseModal}
+            creatorPubKey={gameData?.data?.creator?.publicKey}
+            acceptorPubKey={gameData?.data?.acceptor?.publicKey}
           />
         ) : (
           <Chessboard />

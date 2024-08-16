@@ -23,6 +23,8 @@ import {
 import { useSnackbar } from "./snackbarContext";
 import { useConnectUser } from "@/hooks/api-hooks/useUsers";
 import { useAuth } from "./authContext";
+import nacl from "tweetnacl";
+import naclUtil from "tweetnacl-util";
 
 const clientId =
   "BIaVlcUD-SUS5jlLfPG-V9Bj_EsI19Z31-HitBrMEhWDnOb-jEqKuwtq4W6mTymgwMQhhM5E9RbunQKkYAqnlSc";
@@ -72,6 +74,15 @@ interface Web3AuthContextProps {
     success: boolean;
   }>;
   isLoading: boolean;
+  signMessage: () => Promise<{
+    base64Signature?: string;
+    message?: string;
+  }>;
+  verifySignature: (
+    message: string,
+    signature: string,
+    publicKey: PublicKey
+  ) => boolean;
 }
 
 interface Web3AuthProviderProps {
@@ -245,6 +256,57 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
     }
   };
 
+  const signMessage = async () => {
+    setIsLoading(true);
+    try {
+      if (!provider) {
+        throw new Error("Web3Auth provider is not initialized.");
+      }
+      // Convert message to Uint8Array
+      const message = "Authenticate to confirm your identity for this game.";
+      const messageBytes = new TextEncoder().encode(message);
+
+      // Sign the message
+      const solanaWallet = new SolanaWallet(provider);
+      const signature = await solanaWallet.signMessage(messageBytes);
+      const base64Signature = Buffer.from(signature).toString("base64");
+      setIsLoading(false);
+
+      return { base64Signature: base64Signature, message: message };
+    } catch (error) {
+      console.error("Error during authentication:", error);
+      setIsLoading(false);
+      return {};
+    }
+  };
+
+  const verifySignature = (
+    message: string,
+    signature: string,
+    publicKey: PublicKey
+  ): boolean => {
+    try {
+      // Convert message to Uint8Array
+      const messageBytes = naclUtil.decodeUTF8(message);
+
+      // Convert signature string to Uint8Array
+      const signatureBytes = naclUtil.decodeBase64(signature);
+
+      // Convert PublicKey to Uint8Array
+      const publicKeyBytes = publicKey.toBytes();
+
+      // Verify the signature using tweetnacl
+      return nacl.sign.detached.verify(
+        messageBytes,
+        signatureBytes,
+        publicKeyBytes
+      );
+    } catch (error) {
+      console.error("Error verifying signature:", error);
+      return false;
+    }
+  };
+
   return (
     <Web3AuthContext.Provider
       value={{
@@ -257,6 +319,8 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
         getBalance,
         transfer,
         isLoading,
+        signMessage,
+        verifySignature,
       }}
     >
       {children}
