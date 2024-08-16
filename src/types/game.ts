@@ -1,3 +1,5 @@
+import { User } from "./user";
+
 export type GameStatus =
   | "Scheduled"
   | "Accepted"
@@ -17,4 +19,6 @@ export type Game = {
   gameDateTime: Date;
   isGameAccepted: boolean;
   gameStatus: GameStatus;
+  creator: User;
+  acceptor: User;
 };

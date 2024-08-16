@@ -148,6 +148,26 @@ const GameDetailsDialog: React.FC<GameDetailsDialogProps> = ({
               <Typography>{game?.winnerId}</Typography>
             </Grid>
           ) : null}
+          {game?.creator ? (
+            <Grid item xs={6} display="flex" columnGap={2}>
+              <Typography variant="subtitle1" fontWeight="bold">
+                Game Creator:
+              </Typography>
+              <Typography>
+                {game?.creator?.name ?? game?.creator?.publicKey}
+              </Typography>
+            </Grid>
+          ) : null}
+          {game?.acceptor ? (
+            <Grid item xs={6} display="flex" columnGap={2}>
+              <Typography variant="subtitle1" fontWeight="bold">
+                Game Acceptor:
+              </Typography>
+              <Typography>
+                {game?.acceptor?.name ?? game?.acceptor?.publicKey}
+              </Typography>
+            </Grid>
+          ) : null}
           <Grid item xs={6} display="flex" columnGap={2}>
             <Typography variant="subtitle1" fontWeight="bold">
               Bet Amount:
@@ -166,15 +186,7 @@ const GameDetailsDialog: React.FC<GameDetailsDialogProps> = ({
             </Typography>
             <Typography>{gameDate.toLocaleString()}</Typography>
           </Grid>
-          {game?.acceptorId && (
-            <Grid item xs={12} display="flex" columnGap={2}>
-              <Typography variant="subtitle1" fontWeight="bold">
-                Acceptor ID:
-              </Typography>
-              <Typography>{game.acceptorId}</Typography>
-            </Grid>
-          )}
-          <Grid item xs={12} display="flex" columnGap={2}>
+          <Grid item xs={6} display="flex" columnGap={2}>
             <Typography variant="subtitle1" fontWeight="bold">
               Status:
             </Typography>
