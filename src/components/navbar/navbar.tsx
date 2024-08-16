@@ -17,6 +17,7 @@ import Button from "@mui/material/Button";
 import { useRouter } from "next/navigation";
 import { useWeb3Auth } from "@/context/web3AuthProvider";
 import { useAuth } from "@/context/authContext";
+import SolanaWalletConnectButton from "../solanaWalletConnectButton";
 
 const drawerWidth = 240;
 const navLoggedInItems = [
@@ -167,6 +168,7 @@ const DrawerAppBar = () => {
                 >
                   Connect
                 </Button>
+                <SolanaWalletConnectButton />
               </>
             )}
           </Box>

@@ -10,6 +10,7 @@ import { AuthProvider } from "@/context/authContext";
 import { LoaderProvider } from "@/context/loaderContext";
 import GameStartNotificationComponent from "@/components/gameStartNotifComp";
 import JoinGameNotificationComponent from "@/components/joinGameNotifComp";
+import SolanaWalletContextProvider from "@/context/solanaWalletContextProvider";
 const inter = Inter({ subsets: ["latin"] });
 
 export default function RootLayout({
@@ -24,12 +25,14 @@ export default function RootLayout({
           <QueryClientProvider client={queryClient}>
             <AuthProvider>
               <SnackbarProvider>
-                <Web3AuthProvider>
-                  <Navbar />
-                  {children}
-                  <GameStartNotificationComponent />
-                  <JoinGameNotificationComponent />
-                </Web3AuthProvider>
+                <SolanaWalletContextProvider>
+                  <Web3AuthProvider>
+                    <Navbar />
+                    {children}
+                    <GameStartNotificationComponent />
+                    <JoinGameNotificationComponent />
+                  </Web3AuthProvider>
+                </SolanaWalletContextProvider>
               </SnackbarProvider>
             </AuthProvider>
           </QueryClientProvider>
