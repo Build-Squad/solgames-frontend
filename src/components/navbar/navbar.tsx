@@ -17,7 +17,8 @@ import Button from "@mui/material/Button";
 import { useRouter } from "next/navigation";
 import { useWeb3Auth } from "@/context/web3AuthProvider";
 import { useAuth } from "@/context/authContext";
-import SolanaWalletConnectButton from "../solanaWalletConnectButton";
+import { useState } from "react";
+import ConnectModal from "../modals/connectModal";
 
 const drawerWidth = 240;
 const navLoggedInItems = [
@@ -35,8 +36,9 @@ const navLoggedOutItems = [
 
 const DrawerAppBar = () => {
   const router = useRouter();
-  const [mobileOpen, setMobileOpen] = React.useState(false);
-  const { login, logout } = useWeb3Auth();
+  const [openConnectModal, setOpenConnectModal] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const { logout } = useWeb3Auth();
   const { user } = useAuth();
 
   const handleDrawerToggle = () => {
@@ -164,11 +166,10 @@ const DrawerAppBar = () => {
                     px: 4,
                     fontWeight: "bold",
                   }}
-                  onClick={login}
+                  onClick={() => setOpenConnectModal(true)}
                 >
                   Connect
                 </Button>
-                <SolanaWalletConnectButton />
               </>
             )}
           </Box>
@@ -194,6 +195,14 @@ const DrawerAppBar = () => {
           {drawer}
         </Drawer>
       </nav>
+      {openConnectModal ? (
+        <ConnectModal
+          open={openConnectModal}
+          onClose={() => {
+            setOpenConnectModal(false);
+          }}
+        />
+      ) : null}
     </Box>
   );
 };
