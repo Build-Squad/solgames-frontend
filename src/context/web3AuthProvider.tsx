@@ -156,11 +156,16 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
   };
 
   const logout = async () => {
-    await web3auth.logout();
-    setProvider(null);
-    setLoggedIn(false);
-    logoutUser();
-    showMessage("Logged out!", "success");
+    try {
+      await web3auth.logout();
+      setProvider(null);
+      setLoggedIn(false);
+      logoutUser();
+      showMessage("Logged out!", "success");
+    } catch (e) {
+      console.error(e);
+      showMessage("Something went wrong while logging out!", "error");
+    }
   };
 
   const getUserInfo = async () => {

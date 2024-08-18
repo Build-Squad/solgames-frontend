@@ -11,8 +11,6 @@ import {
   AccordionDetails,
   Typography,
   Box,
-  Divider,
-  Tooltip,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import Image from "next/image";
@@ -20,6 +18,10 @@ import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { useWeb3Auth } from "@/context/web3AuthProvider";
 import { HelpOutline } from "@mui/icons-material";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { useLoader } from "@/context/loaderContext";
+import { useAuth } from "@/context/authContext";
+import { useSnackbar } from "@/context/snackbarContext";
+import { useConnectUser } from "@/hooks/api-hooks/useUsers";
 
 export const getInstallUrl = (walletName: string): string => {
   switch (walletName) {
@@ -38,55 +40,61 @@ export const getInstallUrl = (walletName: string): string => {
   }
 };
 
-const CryptoInfoModal: FC<{ open: boolean; onClose: () => void }> = ({
+const ConnectModal: FC<{ open: boolean; onClose: () => void }> = ({
   open,
   onClose,
 }) => {
+  // States
   const [expanded, setExpanded] = useState<string | false>(false);
-  const [userWalletAddress, setUserWalletAddress] = useState<string>("");
-  const [balance, setBalance] = useState<number | null>(null);
+  const [selectedWallet, setSelectedWallet] = useState<string>("");
 
-  const { connection } = useConnection();
-  const { select, wallets, publicKey, disconnect, connecting } = useWallet();
-
+  // Webhooks and contexts
+  const { select, wallets, publicKey, disconnect } = useWallet();
+  const { showMessage } = useSnackbar();
+  const { connectionMutateAsync } = useConnectUser();
   const { login } = useWeb3Auth();
+  const { login: loginUser, logout: logoutUser } = useAuth();
 
-  const handleAccordionChange =
-    (panel: string) => (event: React.SyntheticEvent, isExpanded: boolean) => {
-      setExpanded(isExpanded ? panel : false);
-    };
-
-  useEffect(() => {
-    if (!connection || !publicKey) return;
-
-    connection.onAccountChange(
-      publicKey,
-      (updatedAccountInfo) => {
-        setBalance(updatedAccountInfo.lamports / LAMPORTS_PER_SOL);
-      },
-      "confirmed"
-    );
-
-    connection.getAccountInfo(publicKey).then((info) => {
-      if (info) {
-        setBalance(info.lamports / LAMPORTS_PER_SOL);
-      }
-    });
-  }, [publicKey, connection]);
+  const createUser = async () => {
+    try {
+      const userInfo = {
+        typeOfLogin: selectedWallet,
+        verifier: "wallet",
+        publicKey: publicKey.toString(),
+      };
+      const res = await connectionMutateAsync({ ...userInfo, publicKey });
+      loginUser(res.data);
+      showMessage(res.message, "success");
+      onClose();
+    } catch (e) {
+      console.log(e);
+      disconnect();
+      logoutUser();
+      showMessage("Error connecting!", "error");
+    }
+  };
 
   useEffect(() => {
-    setUserWalletAddress(publicKey?.toBase58()!);
+    if (publicKey && typeof publicKey === "object" && publicKey.toString()) {
+      createUser();
+    }
   }, [publicKey]);
 
   const handleWalletSelect = async (walletName: any) => {
     if (walletName) {
       try {
+        setSelectedWallet(walletName);
         select(walletName);
       } catch (error) {
         console.log("wallet connection err : ", error);
       }
     }
   };
+
+  const handleAccordionChange =
+    (panel: string) => (event: React.SyntheticEvent, isExpanded: boolean) => {
+      setExpanded(isExpanded ? panel : false);
+    };
 
   return (
     <Dialog
@@ -95,7 +103,8 @@ const CryptoInfoModal: FC<{ open: boolean; onClose: () => void }> = ({
       PaperProps={{
         sx: {
           borderRadius: "20px",
-          bgcolor: "#1a1a1a",
+          bgcolor: "rgba(30, 30, 30, 0.9)",
+          backdropFilter: "blur(10px)",
           padding: "20px",
           width: "90%",
           maxWidth: "600px",
@@ -105,7 +114,7 @@ const CryptoInfoModal: FC<{ open: boolean; onClose: () => void }> = ({
       <DialogTitle
         sx={{
           textAlign: "center",
-          color: "white",
+          color: "#e0e0e0",
           paddingBottom: "10px",
           fontSize: "1.5rem",
         }}
@@ -117,19 +126,28 @@ const CryptoInfoModal: FC<{ open: boolean; onClose: () => void }> = ({
           <Accordion
             expanded={expanded === "newCrypto"}
             onChange={handleAccordionChange("newCrypto")}
-            sx={{ bgcolor: "#333", borderRadius: "10px", mb: 2 }}
+            sx={{
+              bgcolor: "rgba(50, 50, 50, 0.7)",
+              borderRadius: "10px",
+              mb: 2,
+              boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.2)",
+            }}
           >
             <AccordionSummary
-              expandIcon={<ExpandMoreIcon sx={{ color: "white" }} />}
-              sx={{ bgcolor: "#444", borderRadius: "10px", color: "white" }}
+              expandIcon={<ExpandMoreIcon sx={{ color: "#e0e0e0" }} />}
+              sx={{
+                bgcolor: "rgba(40, 40, 40, 0.8)",
+                borderRadius: "10px",
+                color: "#e0e0e0",
+              }}
             >
               <Typography>Sign in with your email or socials.</Typography>
             </AccordionSummary>
             <AccordionDetails
               sx={{
-                bgcolor: "#333",
+                bgcolor: "rgba(50, 50, 50, 0.6)", // more transparency
                 borderRadius: "10px",
-                color: "white",
+                color: "#e0e0e0",
                 textAlign: "center",
                 padding: "20px",
               }}
@@ -137,10 +155,10 @@ const CryptoInfoModal: FC<{ open: boolean; onClose: () => void }> = ({
               <Button
                 variant="contained"
                 sx={{
-                  bgcolor: "#007bff",
-                  color: "white",
+                  bgcolor: "rgba(70, 70, 70, 0.8)", // muted dark
+                  color: "#e0e0e0",
                   "&:hover": {
-                    bgcolor: "#0056b3",
+                    bgcolor: "rgba(90, 90, 90, 0.9)",
                   },
                 }}
                 onClick={login}
@@ -149,21 +167,27 @@ const CryptoInfoModal: FC<{ open: boolean; onClose: () => void }> = ({
               </Button>
             </AccordionDetails>
           </Accordion>
-          <Typography sx={{ textAlign: "center", color: "white" }}>
+          <Typography sx={{ textAlign: "center", color: "#e0e0e0" }}>
             OR
           </Typography>
-          <Divider
-            sx={{ my: 3, borderColor: "white", borderStyle: "dashed" }}
-          />
 
           <Accordion
             expanded={expanded === "existingWallet"}
             onChange={handleAccordionChange("existingWallet")}
-            sx={{ bgcolor: "#333", borderRadius: "10px" }}
+            sx={{
+              bgcolor: "rgba(50, 50, 50, 0.7)",
+              borderRadius: "10px",
+              boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.2)",
+              mt: 2,
+            }}
           >
             <AccordionSummary
-              expandIcon={<ExpandMoreIcon sx={{ color: "white" }} />}
-              sx={{ bgcolor: "#444", borderRadius: "10px", color: "white" }}
+              expandIcon={<ExpandMoreIcon sx={{ color: "#e0e0e0" }} />}
+              sx={{
+                bgcolor: "rgba(40, 40, 40, 0.8)",
+                borderRadius: "10px",
+                color: "#e0e0e0",
+              }}
             >
               <Typography>
                 If you&apos;re a pro, connect your wallet?
@@ -171,9 +195,9 @@ const CryptoInfoModal: FC<{ open: boolean; onClose: () => void }> = ({
             </AccordionSummary>
             <AccordionDetails
               sx={{
-                bgcolor: "#333",
+                bgcolor: "rgba(50, 50, 50, 0.6)",
                 borderRadius: "10px",
-                color: "white",
+                color: "#e0e0e0",
                 display: "flex",
                 flexWrap: "wrap",
                 justifyContent: "center",
@@ -183,23 +207,23 @@ const CryptoInfoModal: FC<{ open: boolean; onClose: () => void }> = ({
             >
               {wallets.map((wallet) => (
                 <Button
-                  disabled={wallet.adapter.readyState !== "Installed"}
                   key={wallet.adapter.name}
+                  disabled={wallet.adapter.readyState !== "Installed"}
                   onClick={() => handleWalletSelect(wallet.adapter.name)}
                   variant="outlined"
                   sx={{
                     position: "relative",
-                    borderRadius: "100%",
-                    width: "40px",
+                    borderRadius: "12px",
+                    width: "60px",
                     height: "60px",
-                    borderColor: "transparent",
-                    backgroundColor: "#444",
-                    color: "white",
+                    borderColor: "rgba(100, 100, 100, 0.4)",
+                    backgroundColor: "rgba(60, 60, 60, 0.7)",
+                    color: "#e0e0e0",
                     justifyContent: "center",
                     alignItems: "center",
                     display: "flex",
                     "&:hover": {
-                      backgroundColor: "#555",
+                      backgroundColor: "rgba(70, 70, 70, 0.8)",
                       border: "none",
                     },
                   }}
@@ -211,22 +235,20 @@ const CryptoInfoModal: FC<{ open: boolean; onClose: () => void }> = ({
                     width={30}
                   />
                   {wallet.adapter.readyState !== "Installed" && (
-                    <Tooltip title="This wallet is not installed on your browser">
-                      <a
-                        style={{
-                          position: "absolute",
-                          top: 0,
-                          right: 0,
-                        }}
-                        href={getInstallUrl(wallet.adapter.name)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <HelpOutline
-                          sx={{ fontSize: "20px", color: "white" }}
-                        />
-                      </a>
-                    </Tooltip>
+                    <a
+                      style={{
+                        position: "absolute",
+                        top: -5,
+                        right: -5,
+                      }}
+                      href={getInstallUrl(wallet.adapter.name)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <HelpOutline
+                        sx={{ fontSize: "20px", color: "#e0e0e0" }}
+                      />
+                    </a>
                   )}
                 </Button>
               ))}
@@ -238,4 +260,4 @@ const CryptoInfoModal: FC<{ open: boolean; onClose: () => void }> = ({
   );
 };
 
-export default CryptoInfoModal;
+export default ConnectModal;
