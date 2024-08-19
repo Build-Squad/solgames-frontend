@@ -141,7 +141,13 @@ const GameDetailsDialog: React.FC<GameDetailsDialogProps> = ({
       >
         <Grid container spacing={2}>
           {game?.gameStatus == STATUS_COLORS.Completed.value ? (
-            <Grid item xs={6} display="flex" columnGap={2}>
+            <Grid
+              item
+              xs={6}
+              display="flex"
+              columnGap={2}
+              alignItems={"center"}
+            >
               <Typography variant="subtitle1" fontWeight="bold">
                 Winner:
               </Typography>
@@ -149,7 +155,13 @@ const GameDetailsDialog: React.FC<GameDetailsDialogProps> = ({
             </Grid>
           ) : null}
           {game?.creator ? (
-            <Grid item xs={6} display="flex" columnGap={2}>
+            <Grid
+              item
+              xs={6}
+              display="flex"
+              columnGap={2}
+              alignItems={"center"}
+            >
               <Typography variant="subtitle1" fontWeight="bold">
                 Game Creator:
               </Typography>
@@ -159,7 +171,13 @@ const GameDetailsDialog: React.FC<GameDetailsDialogProps> = ({
             </Grid>
           ) : null}
           {game?.acceptor ? (
-            <Grid item xs={6} display="flex" columnGap={2}>
+            <Grid
+              item
+              xs={6}
+              display="flex"
+              columnGap={2}
+              alignItems={"center"}
+            >
               <Typography variant="subtitle1" fontWeight="bold">
                 Game Acceptor:
               </Typography>
@@ -168,25 +186,29 @@ const GameDetailsDialog: React.FC<GameDetailsDialogProps> = ({
               </Typography>
             </Grid>
           ) : null}
-          <Grid item xs={6} display="flex" columnGap={2}>
+          <Grid item xs={6} display="flex" columnGap={2} alignItems={"center"}>
             <Typography variant="subtitle1" fontWeight="bold">
               Bet Amount:
             </Typography>
-            <Chip label={`$${game?.betAmount}`} color="primary" />
+            <Chip
+              label={`${game?.betAmount} SOL`}
+              sx={{ color: "white", borderColor: "white", fontWeight: "bold" }}
+              variant="outlined"
+            />
           </Grid>
-          <Grid item xs={6} display="flex" columnGap={2}>
+          <Grid item xs={6} display="flex" columnGap={2} alignItems={"center"}>
             <Typography variant="subtitle1" fontWeight="bold">
               Invite Code:
             </Typography>
             <Typography>{game?.inviteCode}</Typography>
           </Grid>
-          <Grid item xs={6} display="flex" columnGap={2}>
+          <Grid item xs={6} display="flex" columnGap={2} alignItems={"center"}>
             <Typography variant="subtitle1" fontWeight="bold">
               Game Date Time:
             </Typography>
             <Typography>{gameDate.toLocaleString()}</Typography>
           </Grid>
-          <Grid item xs={6} display="flex" columnGap={2}>
+          <Grid item xs={6} display="flex" columnGap={2} alignItems={"center"}>
             <Typography variant="subtitle1" fontWeight="bold">
               Status:
             </Typography>

@@ -48,7 +48,11 @@ const JoinGameNotificationComponent: React.FC = () => {
       const startTime = new Date(game.gameDateTime);
       const diff = now.getTime() - startTime.getTime();
 
-      if (diff >= 0 && diff <= WARNING_DURATION && game.isGameAccepted) {
+      if (
+        diff >= 0 &&
+        diff <= WARNING_DURATION &&
+        game.gameStatus == STATUS_COLORS.InProgress.value
+      ) {
         if (gameInQueue) {
           setGameInQueue([...gameInQueue, game]);
         } else {
