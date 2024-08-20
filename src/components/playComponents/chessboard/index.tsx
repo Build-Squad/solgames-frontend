@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
-import { Box, Snackbar, Typography } from "@mui/material";
+import { Box, Button, Dialog, Typography } from "@mui/material";
 import { Chess, Square as ChessSquare } from "chess.js";
 import PlayerComp from "@/components/playComponents/playerComp";
 import Image from "next/image";
@@ -28,7 +28,7 @@ import MoveWarningSnackbar, {
 } from "../moveWarningSnackbar";
 import LooserModal from "@/components/modals/looserModal";
 
-const PLAYER_TURN_TIME = 10;
+const PLAYER_TURN_TIME = 240;
 
 // White small letter, Black big letter
 const pieceImages: { [key: string]: string } = {
@@ -118,6 +118,13 @@ const Chessboard = () => {
   const [showMoveWarning, setShowMoveWarning] = useState(false);
   const [timeoutCount, setTimeoutCount] = useState(0);
 
+  // State related to pawn promotion
+  const [promotionDialogOpen, setPromotionDialogOpen] = useState(false);
+  const [promotionSquare, setPromotionSquare] = useState<ChessSquare | null>(
+    null
+  );
+  const [promotionFrom, setPromotionFrom] = useState<ChessSquare | null>(null);
+
   const { socket } = useSocket();
   const { showMessage } = useSnackbar();
   const { user } = useAuth();
@@ -201,11 +208,48 @@ const Chessboard = () => {
     const from = indexToSquare(selectedSquare!);
     const to = indexToSquare(index);
     const move = { from, to };
-    socket?.emit("makeMove", { gameId, move, userId: user.id });
+
+    if (isPromotionMove(from, to)) {
+      setPromotionFrom(from);
+      setPromotionSquare(to);
+      setPromotionDialogOpen(true);
+    } else {
+      executeMove(move);
+    }
+
     setPossibleMoves([]);
     setSelectedSquare(null);
 
     handleCloseSnackbar();
+  };
+
+  const isPromotionMove = (from: ChessSquare, to: ChessSquare) => {
+    const piece = chess.get(from);
+    if (piece && piece.type === "p") {
+      const targetRank = piece.color === "w" ? "8" : "1";
+      return to[1] === targetRank;
+    }
+    return false;
+  };
+
+  const executeMove = (move: {
+    from: ChessSquare;
+    to: ChessSquare;
+    promotion?: string;
+  }) => {
+    socket?.emit("makeMove", { gameId, move, userId: user.id });
+  };
+
+  const handlePromotion = (pieceType: string) => {
+    if (promotionSquare && promotionFrom) {
+      const move = {
+        from: promotionFrom,
+        to: promotionSquare,
+        promotion: pieceType,
+      };
+      executeMove(move);
+      setPromotionDialogOpen(false);
+    }
   };
 
   const handleSquareClick = (index: number) => {
@@ -565,6 +609,33 @@ const Chessboard = () => {
               </Box>
             ))}
           </Box>
+
+          <Dialog
+            open={promotionDialogOpen}
+            onClose={() => setPromotionDialogOpen(false)}
+          >
+            <Box sx={{ padding: 2 }}>
+              <Typography>Select a piece for promotion:</Typography>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-around",
+                  marginTop: 2,
+                }}
+              >
+                {["q", "r", "b", "n"].map((piece) => (
+                  <Button key={piece} onClick={() => handlePromotion(piece)}>
+                    <Image
+                      src={pieceImages[piece]}
+                      alt={`Promote to ${piece}`}
+                      width={50}
+                      height={50}
+                    />
+                  </Button>
+                ))}
+              </Box>
+            </Box>
+          </Dialog>
         </Box>
       </Box>
       <Box

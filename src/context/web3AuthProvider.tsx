@@ -25,6 +25,7 @@ import { useConnectUser } from "@/hooks/api-hooks/useUsers";
 import { useAuth } from "./authContext";
 import nacl from "tweetnacl";
 import naclUtil from "tweetnacl-util";
+import { Web3AuthContextProps, Web3AuthProviderProps } from "./interfaces";
 
 const clientId =
   "BIaVlcUD-SUS5jlLfPG-V9Bj_EsI19Z31-HitBrMEhWDnOb-jEqKuwtq4W6mTymgwMQhhM5E9RbunQKkYAqnlSc";
@@ -54,40 +55,6 @@ const web3auth = new Web3Auth({
 const openloginAdapter = new OpenloginAdapter({ privateKeyProvider });
 web3auth.configureAdapter(openloginAdapter);
 
-interface Web3AuthContextProps {
-  provider: IProvider | null;
-  loggedIn: boolean;
-  login: () => Promise<void>;
-  logout: () => Promise<void>;
-  getUserInfo: () => Promise<any>;
-  getAccounts: (provider: IProvider) => Promise<string[] | string>;
-  getBalance: () => Promise<string>;
-  transfer: ({
-    recipientAddress,
-    amountInSol,
-  }: {
-    recipientAddress: string;
-    amountInSol: number;
-  }) => Promise<{
-    data: any;
-    message: string;
-    success: boolean;
-  }>;
-  isLoading: boolean;
-  signMessage: () => Promise<{
-    base64Signature?: string;
-    message?: string;
-  }>;
-  verifySignature: (
-    message: string,
-    signature: string,
-    publicKey: PublicKey
-  ) => boolean;
-}
-
-interface Web3AuthProviderProps {
-  children: ReactNode;
-}
 
 const Web3AuthContext = createContext<Web3AuthContextProps | undefined>(
   undefined
