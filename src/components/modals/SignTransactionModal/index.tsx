@@ -33,6 +33,8 @@ interface SignTransactionProps {
   type?: string;
   betAmount: string;
   createGame?: () => Promise<void>;
+  escrowId: string;
+  serializedTransaction: string;
 }
 
 const SignTransactionModal = ({
@@ -42,49 +44,45 @@ const SignTransactionModal = ({
   type = "ACCEPT",
   betAmount,
   createGame,
+  escrowId,
+  serializedTransaction,
 }: SignTransactionProps) => {
   const router = useRouter();
-  const [escrowAccount, setEscrowAccount] = useState(
-    "2TA2aASYQFWNyo8ac5V9Fg5E19nPYbHEfg8obnkfDMRv"
-  );
   const [transactionApproved, setTransactionApproved] = useState(false);
   const { showMessage } = useSnackbar();
   const { user } = useAuth();
   const { acceptGameMutateAsync } = useAcceptGame();
   const { transfer, isLoading } = useWeb3Auth();
 
-  const handleAcceptGame = async () => {
-    try {
-      const tx = await transfer({
-        recipientAddress: escrowAccount,
-        amountInSol: parseInt(betAmount),
-      });
+  // const handleAcceptGame = async () => {
+  //   try {
+  //     const tx = await transfer({
+  //       recipientAddress: escrowAccount,
+  //       amountInSol: parseInt(betAmount),
+  //     });
 
-      if (tx.success) {
-        await acceptGameMutateAsync({
-          acceptorId: user?.id,
-          joiningCode,
-        });
-        setTransactionApproved(true);
-        showMessage("Accepted Successfully!");
-        setTimeout(() => {
-          router.push("/my-games");
-          handleClose();
-        }, 3000);
-      } else {
-        showMessage("Transaction Failed!", "error");
-      }
-    } catch (err) {
-      showMessage(err, "error");
-    }
-  };
+  //     if (tx.success) {
+  //       await acceptGameMutateAsync({
+  //         acceptorId: user?.id,
+  //         joiningCode,
+  //       });
+  //       setTransactionApproved(true);
+  //       showMessage("Accepted Successfully!");
+  //       setTimeout(() => {
+  //         router.push("/my-games");
+  //         handleClose();
+  //       }, 3000);
+  //     } else {
+  //       showMessage("Transaction Failed!", "error");
+  //     }
+  //   } catch (err) {
+  //     showMessage(err, "error");
+  //   }
+  // };
 
   const handleCreateGame = async () => {
     try {
-      const tx = await transfer({
-        recipientAddress: escrowAccount,
-        amountInSol: parseInt(betAmount),
-      });
+      const tx = await transfer(serializedTransaction);
       if (tx.success) {
         setTransactionApproved(true);
         showMessage(tx.message);
@@ -98,6 +96,7 @@ const SignTransactionModal = ({
       showMessage(err, "error");
     }
   };
+  const handleAcceptGame = () => {};
 
   const handleSign = async () => {
     if (type == "ACCEPT") {
@@ -117,7 +116,7 @@ const SignTransactionModal = ({
           1 SOL
         </Typography>
         <Typography variant="subtitle1" align="center" color="textSecondary">
-          ≈ 24.00 USD
+          ≈ 149.53 USD
         </Typography>
         <Divider sx={{ my: 2 }} />
         <Typography variant="body2">
@@ -131,7 +130,7 @@ const SignTransactionModal = ({
           <b>Sender address</b> : {user?.publicKey}
         </Typography>
         <Typography variant="body2" sx={{ mt: 1 }}>
-          <b>Receiver address</b> : {escrowAccount}
+          <b>Escrow id</b> : {escrowId}
         </Typography>
         <Divider sx={{ my: 2 }} />
         <Box display="flex" justifyContent="space-between" mb={1}>

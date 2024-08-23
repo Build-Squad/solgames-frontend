@@ -10,13 +10,7 @@ export interface Web3AuthContextProps {
   getUserInfo: () => Promise<any>;
   getAccounts: (provider: IProvider) => Promise<string[] | string>;
   getBalance: () => Promise<string>;
-  transfer: ({
-    recipientAddress,
-    amountInSol,
-  }: {
-    recipientAddress: string;
-    amountInSol: number;
-  }) => Promise<{
+  transfer: (serializedTransaction: string) => Promise<{
     data: any;
     message: string;
     success: boolean;

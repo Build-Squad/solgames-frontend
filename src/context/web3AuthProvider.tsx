@@ -55,7 +55,6 @@ const web3auth = new Web3Auth({
 const openloginAdapter = new OpenloginAdapter({ privateKeyProvider });
 web3auth.configureAdapter(openloginAdapter);
 
-
 const Web3AuthContext = createContext<Web3AuthContextProps | undefined>(
   undefined
 );
@@ -165,7 +164,7 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
     return (balance / 1e9).toString(); // Convert lamports to SOL
   };
   // Function to handle SOL transfer
-  const transfer = async ({ recipientAddress, amountInSol }) => {
+  const transfer = async (serializedTransaction) => {
     if (!provider) {
       throw new Error("Provider is not initialized.");
     }
@@ -173,34 +172,33 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
     setIsLoading(true);
     try {
       const solanaWallet = new SolanaWallet(provider);
+
+      // Request the connected wallet accounts
       const accounts = await solanaWallet.requestAccounts();
-
       const connection = new Connection(chainConfig.rpcTarget);
-      const blockhash = (await connection.getLatestBlockhash("finalized"))
-        .blockhash;
 
+      // Deserialize the transaction received from the backend
+      const transaction = Transaction.from(
+        Buffer.from(serializedTransaction, "base64")
+      );
+
+      // Ensure that the fee payer is the user's wallet (for safety)
       const senderPublicKey = new PublicKey(accounts[0]);
-      const recipientPublicKey = new PublicKey(recipientAddress);
+      transaction.feePayer = senderPublicKey;
 
-      // Convert amount from SOL to lamports (1 SOL = 1e9 lamports)
-      const amountInLamports = amountInSol * LAMPORTS_PER_SOL;
-
-      const TransactionInstruction = SystemProgram.transfer({
-        fromPubkey: senderPublicKey,
-        toPubkey: recipientPublicKey,
-        lamports: amountInLamports,
-      });
-
-      const transaction = new Transaction({
-        recentBlockhash: blockhash,
-        feePayer: senderPublicKey,
-      }).add(TransactionInstruction);
-
+      // Sign the transaction with the user's wallet
       const signedTx = await solanaWallet.signTransaction(transaction);
-      const serializedTx = signedTx.serialize();
-      const signature = await connection.sendRawTransaction(serializedTx, {
-        skipPreflight: false,
-      });
+
+      // Serialize the signed transaction
+      const serializedSignedTx = signedTx.serialize();
+
+      // Send the serialized signed transaction to the Solana network
+      const signature = await connection.sendRawTransaction(
+        serializedSignedTx,
+        {
+          skipPreflight: false,
+        }
+      );
 
       // Confirm the transaction
       const confirmation = await connection.confirmTransaction(
@@ -218,6 +216,7 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
         message: "Transaction Successful!",
       };
     } catch (error) {
+      console.log("error aa gya ==== ", error);
       return {
         data: null,
         success: false,

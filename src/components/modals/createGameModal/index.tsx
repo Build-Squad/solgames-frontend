@@ -9,6 +9,7 @@ import {
   TextField,
   Box,
   InputAdornment,
+  CircularProgress,
 } from "@mui/material";
 import { TransitionProps } from "@mui/material/transitions";
 import { Questrial } from "next/font/google";
@@ -21,6 +22,7 @@ import { useLoader } from "@/context/loaderContext";
 import { generateInviteCode } from "@/utils/helper";
 import CreateCelebrationModal from "../createCelebrationModal";
 import SignTransactionModal from "../SignTransactionModal";
+import { useCreateEscrow } from "@/hooks/api-hooks/useEscrow";
 
 const questrial = Questrial({
   weight: "400",
@@ -60,6 +62,32 @@ const CreateGameModal = ({ handleClose }) => {
   const [inviteCode, setInviteCode] = useState("");
   const [isCelebrationModalOpen, setIsCelebrationModalOpen] = useState(false);
   const [transactionModalOpen, setTransactionModalOpen] = useState(false);
+
+  const {
+    isCreateEscrowLoading,
+    createEscrowMutateAsync,
+    createEscrowResponse,
+  } = useCreateEscrow();
+
+  const handleCreateEscrow = async () => {
+    if (validateDateTime(date, time, betAmount)) {
+      try {
+        const res = await createEscrowMutateAsync({
+          amount: parseFloat(betAmount),
+          userId: user?.id,
+          publicKey: user?.publicKey,
+        });
+        if (res.success) {
+          showMessage(res.message, "success");
+          setTransactionModalOpen(true);
+        } else {
+          showMessage(res.message, "error");
+        }
+      } catch (e) {
+        showMessage("Something went wrong!", "error");
+      }
+    }
+  };
 
   const createGame = async () => {
     showLoader();
@@ -226,10 +254,7 @@ const CreateGameModal = ({ handleClose }) => {
             Cancel
           </Button>
           <Button
-            onClick={() => {
-              validateDateTime(date, time, betAmount) &&
-                setTransactionModalOpen(true);
-            }}
+            onClick={handleCreateEscrow}
             sx={{
               px: 4,
               fontWeight: "bold",
@@ -240,7 +265,14 @@ const CreateGameModal = ({ handleClose }) => {
               },
             }}
           >
-            Create Game
+            {isCreateEscrowLoading ? (
+              <CircularProgress
+                size={24}
+                sx={{ fontWeight: "bold", color: "#000" }}
+              />
+            ) : (
+              "Create Game"
+            )}
           </Button>
         </DialogActions>
       </Dialog>
@@ -255,6 +287,10 @@ const CreateGameModal = ({ handleClose }) => {
         createGame={createGame}
         type={"CREATE"}
         betAmount={betAmount}
+        escrowId={createEscrowResponse?.data?.vaultId}
+        serializedTransaction={
+          createEscrowResponse?.data?.serializedTransaction
+        }
       />
     </>
   );
