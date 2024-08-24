@@ -191,6 +191,7 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
 
       // Serialize the signed transaction
       const serializedSignedTx = signedTx.serialize();
+      const encodedSerializedSignedTx = serializedSignedTx.toString("base64");
 
       // Send the serialized signed transaction to the Solana network
       const signature = await connection.sendRawTransaction(
@@ -211,12 +212,11 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
       }
 
       return {
-        data: signature,
+        data: { encodedSerializedSignedTx, signature, serializedSignedTx },
         success: true,
         message: "Transaction Successful!",
       };
     } catch (error) {
-      console.log("error aa gya ==== ", error);
       return {
         data: null,
         success: false,

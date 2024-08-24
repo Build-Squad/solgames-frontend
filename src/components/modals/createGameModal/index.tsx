@@ -59,7 +59,7 @@ const CreateGameModal = ({ handleClose }) => {
   const { user } = useAuth();
   const { createGameMutateAsync } = useCreateGame();
   const { showLoader, hideLoader } = useLoader();
-  const [inviteCode, setInviteCode] = useState("");
+  const [inviteCode, setInviteCode] = useState(generateInviteCode());
   const [isCelebrationModalOpen, setIsCelebrationModalOpen] = useState(false);
   const [transactionModalOpen, setTransactionModalOpen] = useState(false);
 
@@ -76,6 +76,7 @@ const CreateGameModal = ({ handleClose }) => {
           amount: parseFloat(betAmount),
           userId: user?.id,
           publicKey: user?.publicKey,
+          inviteCode: inviteCode,
         });
         if (res.success) {
           showMessage(res.message, "success");
@@ -91,16 +92,21 @@ const CreateGameModal = ({ handleClose }) => {
 
   const createGame = async () => {
     showLoader();
-    if (validateDateTime(date, time, betAmount)) {
-      const newInviteCode = generateInviteCode();
-      await createGameMutateAsync({
+    try {
+      const res = await createGameMutateAsync({
         betAmount: parseFloat(betAmount),
-        inviteCode: newInviteCode,
+        inviteCode: inviteCode,
         gameDateTime: `${date}T${time}:00`,
         creatorId: user.id,
       });
-      setInviteCode(newInviteCode);
-      setIsCelebrationModalOpen(true);
+      if (res.success) {
+        setIsCelebrationModalOpen(true);
+        showMessage(res.message, "success");
+      } else {
+        showMessage(res.message, "error");
+      }
+    } catch (err) {
+      showMessage("Something went wrong!", "error");
     }
     hideLoader();
   };
@@ -287,10 +293,8 @@ const CreateGameModal = ({ handleClose }) => {
         createGame={createGame}
         type={"CREATE"}
         betAmount={betAmount}
-        escrowId={createEscrowResponse?.data?.vaultId}
-        serializedTransaction={
-          createEscrowResponse?.data?.serializedTransaction
-        }
+        inviteCode={inviteCode}
+        createdEscrowData={createEscrowResponse?.data}
       />
     </>
   );

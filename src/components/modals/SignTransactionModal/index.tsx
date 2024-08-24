@@ -14,6 +14,8 @@ import { useAuth } from "@/context/authContext";
 import { useAcceptGame } from "@/hooks/api-hooks/useGames";
 import { useWeb3Auth } from "@/context/web3AuthProvider";
 import { useRouter } from "next/navigation";
+import { useExecuteEscrow } from "@/hooks/api-hooks/useEscrow";
+import { CreateEscrowResponse } from "@/api-services/interfaces/escrowInterface";
 
 const style = {
   position: "absolute",
@@ -29,23 +31,21 @@ const style = {
 interface SignTransactionProps {
   open: boolean;
   handleClose: () => void;
-  joiningCode?: string;
   type?: string;
   betAmount: string;
   createGame?: () => Promise<void>;
-  escrowId: string;
-  serializedTransaction: string;
+  inviteCode: string;
+  createdEscrowData: CreateEscrowResponse["data"];
 }
 
 const SignTransactionModal = ({
   open,
   handleClose,
-  joiningCode,
   type = "ACCEPT",
   betAmount,
   createGame,
-  escrowId,
-  serializedTransaction,
+  inviteCode,
+  createdEscrowData,
 }: SignTransactionProps) => {
   const router = useRouter();
   const [transactionApproved, setTransactionApproved] = useState(false);
@@ -53,6 +53,8 @@ const SignTransactionModal = ({
   const { user } = useAuth();
   const { acceptGameMutateAsync } = useAcceptGame();
   const { transfer, isLoading } = useWeb3Auth();
+  const { isExecuteEscrowLoading, executeEscrowMutateAsync } =
+    useExecuteEscrow();
 
   // const handleAcceptGame = async () => {
   //   try {
@@ -80,20 +82,39 @@ const SignTransactionModal = ({
   //   }
   // };
 
-  const handleCreateGame = async () => {
+  const executeEscrowTransaction = async (signedTransaction) => {
     try {
-      const tx = await transfer(serializedTransaction);
-      if (tx.success) {
+      const exeRes = await executeEscrowMutateAsync({
+        signedTransaction: signedTransaction,
+        transactionId: createdEscrowData?.transactionId,
+        vaultId: createdEscrowData?.vaultId,
+      });
+      if (!exeRes.success) {
+        showMessage(exeRes.message, "error");
+      }
+      return true;
+    } catch (e) {
+      showMessage("Error while execute escrow", "error");
+      return false;
+    }
+  };
+
+  const handleCreateGame = async () => {
+    const tx = await transfer(createdEscrowData?.serializedTransaction);
+    if (tx.success) {
+      const executeSuccessfully = await executeEscrowTransaction(
+        tx?.data?.encodedSerializedSignedTx
+      );
+
+      if (executeSuccessfully) {
         setTransactionApproved(true);
         showMessage(tx.message);
-
-        createGame();
-        handleClose();
-      } else {
-        showMessage(tx.message, "error");
       }
-    } catch (err) {
-      showMessage(err, "error");
+
+      createGame();
+      handleClose();
+    } else {
+      showMessage(tx.message, "error");
     }
   };
   const handleAcceptGame = () => {};
@@ -130,7 +151,7 @@ const SignTransactionModal = ({
           <b>Sender address</b> : {user?.publicKey}
         </Typography>
         <Typography variant="body2" sx={{ mt: 1 }}>
-          <b>Escrow id</b> : {escrowId}
+          <b>Escrow id</b> : {createdEscrowData?.vaultId}
         </Typography>
         <Divider sx={{ my: 2 }} />
         <Box display="flex" justifyContent="space-between" mb={1}>
