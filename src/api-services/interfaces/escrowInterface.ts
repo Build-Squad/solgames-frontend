@@ -36,6 +36,9 @@ export interface ExecuteEscrowRequest {
   vaultId: string;
   signedTransaction: string;
   transactionId: string;
+  inviteCode: string;
+  userId: string;
+  userRole: "Creator" | "Acceptor";
 }
 
 export interface ExecuteEscrowResponse {

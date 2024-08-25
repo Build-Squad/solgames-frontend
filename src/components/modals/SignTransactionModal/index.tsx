@@ -82,12 +82,15 @@ const SignTransactionModal = ({
   //   }
   // };
 
-  const executeEscrowTransaction = async (signedTransaction) => {
+  const executeEscrowTransaction = async (signedTransaction: string) => {
     try {
       const exeRes = await executeEscrowMutateAsync({
         signedTransaction: signedTransaction,
         transactionId: createdEscrowData?.transactionId,
         vaultId: createdEscrowData?.vaultId,
+        inviteCode,
+        userId: user?.id,
+        userRole: "Creator",
       });
       if (!exeRes.success) {
         showMessage(exeRes.message, "error");
