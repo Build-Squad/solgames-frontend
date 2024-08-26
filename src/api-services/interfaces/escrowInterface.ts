@@ -4,9 +4,8 @@ import { PublicKey } from "@solana/web3.js";
 
 // Create escrow
 export interface CreateEscrowRequest {
-  amount: number;
+  amount?: number;
   publicKey: PublicKey;
-  userId: string;
   inviteCode: string;
 }
 

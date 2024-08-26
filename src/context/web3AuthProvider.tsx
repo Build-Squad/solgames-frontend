@@ -164,7 +164,7 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
     return (balance / 1e9).toString(); // Convert lamports to SOL
   };
   // Function to handle SOL transfer
-  const transfer = async (serializedTransaction) => {
+  const transfer = async (serializedTransaction: string) => {
     if (!provider) {
       throw new Error("Provider is not initialized.");
     }
@@ -208,7 +208,7 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
       );
 
       if (confirmation.value.err) {
-        throw new Error("Transaction failed!");
+        throw new Error();
       }
 
       return {
@@ -217,6 +217,7 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
         message: "Transaction Successful!",
       };
     } catch (error) {
+      console.log("error: ", error);
       return {
         data: null,
         success: false,

@@ -22,7 +22,7 @@ import { useLoader } from "@/context/loaderContext";
 import { generateInviteCode } from "@/utils/helper";
 import CreateCelebrationModal from "../createCelebrationModal";
 import SignTransactionModal from "../SignTransactionModal";
-import { useCreateEscrow } from "@/hooks/api-hooks/useEscrow";
+import { useCreateAndInitiateEscrow } from "@/hooks/api-hooks/useEscrow";
 
 const questrial = Questrial({
   weight: "400",
@@ -67,14 +67,16 @@ const CreateGameModal = ({ handleClose }) => {
     isCreateEscrowLoading,
     createEscrowMutateAsync,
     createEscrowResponse,
-  } = useCreateEscrow();
+  } = useCreateAndInitiateEscrow();
 
+  // 1)
+  // First step an escrow and a transaction to deposit funds is created to transfer funds.
+  // After that on Sign transaction screen
   const handleCreateEscrow = async () => {
     if (validateDateTime(date, time, betAmount)) {
       try {
         const res = await createEscrowMutateAsync({
           amount: parseFloat(betAmount),
-          userId: user?.id,
           publicKey: user?.publicKey,
           inviteCode: inviteCode,
         });
@@ -90,6 +92,9 @@ const CreateGameModal = ({ handleClose }) => {
     }
   };
 
+  // 5.1)
+  // After all the funds are transferred successfully, create the game with the
+  // game details and creator details
   const createGame = async () => {
     showLoader();
     try {
@@ -294,7 +299,7 @@ const CreateGameModal = ({ handleClose }) => {
         type={"CREATE"}
         betAmount={betAmount}
         inviteCode={inviteCode}
-        createdEscrowData={createEscrowResponse?.data}
+        escrowData={createEscrowResponse?.data}
       />
     </>
   );

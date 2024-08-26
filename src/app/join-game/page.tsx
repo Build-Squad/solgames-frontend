@@ -4,6 +4,7 @@ import NoDataFound from "@/components/noDataFound";
 import { useAuth } from "@/context/authContext";
 import { useSnackbar } from "@/context/snackbarContext";
 import { useWeb3Auth } from "@/context/web3AuthProvider";
+import { useAcceptAndInitializeEscrow } from "@/hooks/api-hooks/useEscrow";
 import { useGetGameWithInviteCode } from "@/hooks/api-hooks/useGames";
 import { STATUS_COLORS } from "@/utils/constants";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -23,6 +24,9 @@ export default function JoinGame({}: Props) {
   const { data: gameData, refetch: refetchGameData } =
     useGetGameWithInviteCode(joiningCode);
 
+  const { acceptEscrowMutateAsync, acceptEscrowResponse } =
+    useAcceptAndInitializeEscrow();
+
   useEffect(() => {
     if (
       gameData?.data &&
@@ -35,9 +39,25 @@ export default function JoinGame({}: Props) {
       );
       setTimeout(() => {
         router.back();
-      }, 5000);
+      }, 3000);
+    } else {
+      initializeAcceptGame();
     }
-  }, [gameData]);
+  }, [gameData, user?.id]);
+
+  const initializeAcceptGame = async () => {
+    try {
+      const res = await acceptEscrowMutateAsync({
+        publicKey: user?.publicKey,
+        inviteCode: joiningCode,
+      });
+      if (!res.success) {
+        showMessage(res.message, "error");
+      }
+    } catch (e) {
+      showMessage("Something went wrong!", "error");
+    }
+  };
 
   if (!gameData?.success) {
     return <NoDataFound onRetry={refetchGameData} />;
@@ -56,8 +76,10 @@ export default function JoinGame({}: Props) {
     <SignTransactionModal
       open={true}
       handleClose={() => {}}
-      joiningCode={joiningCode}
+      type={"ACCEPT"}
       betAmount={gameData.data.betAmount}
+      inviteCode={joiningCode}
+      escrowData={acceptEscrowResponse?.data}
     />
   );
 }

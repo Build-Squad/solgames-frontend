@@ -7,9 +7,15 @@ import {
 } from "./interfaces/escrowInterface";
 
 class EscrowServices {
-  createEscrow = async (payload: CreateEscrowRequest) => {
+  createAndInitiateEscrow = async (payload: CreateEscrowRequest) => {
     return CoreAPIService.post<CreateEscrowResponse>(
-      `/escrow/deposit`,
+      `/escrow/create-initialize`,
+      payload
+    );
+  };
+  acceptAndInitiateEscrow = async (payload: CreateEscrowRequest) => {
+    return CoreAPIService.post<CreateEscrowResponse>(
+      `/escrow/accept-initialize`,
       payload
     );
   };
