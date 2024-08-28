@@ -1,27 +1,21 @@
 import CoreAPIService from "./CoreServiceAPI";
 import {
-  CreateEscrowRequest,
-  CreateEscrowResponse,
+  CreateAndDepositEscrowResponse,
+  CreateAndDepositEscrowRequest,
   ExecuteEscrowRequest,
   ExecuteEscrowResponse,
 } from "./interfaces/escrowInterface";
 
 class EscrowServices {
-  createAndInitiateEscrow = async (payload: CreateEscrowRequest) => {
-    return CoreAPIService.post<CreateEscrowResponse>(
-      `/escrow/create-initialize`,
-      payload
-    );
-  };
-  acceptAndInitiateEscrow = async (payload: CreateEscrowRequest) => {
-    return CoreAPIService.post<CreateEscrowResponse>(
-      `/escrow/accept-initialize`,
+  createEscrow = async (payload: CreateAndDepositEscrowRequest) => {
+    return CoreAPIService.post<CreateAndDepositEscrowResponse>(
+      `/escrow/create-escrow`,
       payload
     );
   };
   executeEscrow = async (payload: ExecuteEscrowRequest) => {
     return CoreAPIService.post<ExecuteEscrowResponse>(
-      `/escrow/execute`,
+      `/escrow/execute-deposit`,
       payload
     );
   };

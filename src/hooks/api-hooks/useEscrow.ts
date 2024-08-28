@@ -1,41 +1,24 @@
 import EscrowServices from "@/api-services/EscrowServices";
 import {
-  CreateEscrowRequest,
+  CreateAndDepositEscrowRequest,
   ExecuteEscrowRequest,
 } from "@/api-services/interfaces/escrowInterface";
 import { useMutation } from "@tanstack/react-query";
 
-export const useCreateAndInitiateEscrow = () => {
+export const useCreateEscrow = () => {
   const {
     isPending: isCreateEscrowLoading,
     data: createEscrowResponse,
     mutateAsync: createEscrowMutateAsync,
   } = useMutation({
-    mutationFn: (payload: CreateEscrowRequest) =>
-      EscrowServices.createAndInitiateEscrow(payload),
+    mutationFn: (payload: CreateAndDepositEscrowRequest) =>
+      EscrowServices.createEscrow(payload),
   });
 
   return {
     isCreateEscrowLoading,
-    createEscrowMutateAsync,
     createEscrowResponse,
-  };
-};
-
-export const useAcceptAndInitializeEscrow = () => {
-  const {
-    isPending: isAcceptEscrowLoading,
-    data: acceptEscrowResponse,
-    mutateAsync: acceptEscrowMutateAsync,
-  } = useMutation({
-    mutationFn: (payload: CreateEscrowRequest) =>
-      EscrowServices.acceptAndInitiateEscrow(payload),
-  });
-
-  return {
-    isAcceptEscrowLoading,
-    acceptEscrowResponse,
-    acceptEscrowMutateAsync,
+    createEscrowMutateAsync,
   };
 };
 

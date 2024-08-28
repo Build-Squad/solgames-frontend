@@ -22,7 +22,7 @@ import { useLoader } from "@/context/loaderContext";
 import { generateInviteCode } from "@/utils/helper";
 import CreateCelebrationModal from "../createCelebrationModal";
 import SignTransactionModal from "../SignTransactionModal";
-import { useCreateAndInitiateEscrow } from "@/hooks/api-hooks/useEscrow";
+import { useCreateEscrow } from "@/hooks/api-hooks/useEscrow";
 
 const questrial = Questrial({
   weight: "400",
@@ -65,9 +65,9 @@ const CreateGameModal = ({ handleClose }) => {
 
   const {
     isCreateEscrowLoading,
-    createEscrowMutateAsync,
     createEscrowResponse,
-  } = useCreateAndInitiateEscrow();
+    createEscrowMutateAsync,
+  } = useCreateEscrow();
 
   // 1)
   // First step an escrow and a transaction to deposit funds is created to transfer funds.

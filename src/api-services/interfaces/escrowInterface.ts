@@ -3,24 +3,35 @@ import { PublicKey } from "@solana/web3.js";
 // Escrow related interfaces
 
 // Create escrow
-export interface CreateEscrowRequest {
-  amount?: number;
-  publicKey: PublicKey;
+
+export interface CreateAndDepositEscrowRequest {
+  amount: number;
   inviteCode: string;
+  publicKey: string;
 }
 
-export interface CreateEscrowResponse {
+export interface CreateAndDepositEscrowResponse {
   success: boolean;
   data: {
-    transactionId: string;
-    vaultId: string;
-    serializedTransaction: string;
-    expiresIn: string;
-    asset: Asset;
+    escrowDetails: EscrowDetails;
+    depositSerializedTransaction: TransactionDetails;
   };
   message: string;
 }
-interface Asset {
+
+export interface TransactionDetails {
+  serializedTransaction: string;
+  transactionId: string;
+}
+export interface EscrowDetails {
+  vaultId: string;
+  transactionId: string;
+  serializedTransaction: string;
+  expiresIn: string;
+  asset: Asset;
+}
+
+export interface Asset {
   token: string;
   amount: number;
   decimals: number;

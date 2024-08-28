@@ -1,25 +1,17 @@
 "use client";
-import React, {
-  createContext,
-  ReactNode,
-  useContext,
-  useEffect,
-  useState,
-} from "react";
-import { CHAIN_NAMESPACES, IProvider, WEB3AUTH_NETWORK } from "@web3auth/base";
+import React, { createContext, useContext, useEffect, useState } from "react";
+import {
+  CHAIN_NAMESPACES,
+  IProvider,
+  WEB3AUTH_NETWORK,
+} from "@web3auth/base";
 import {
   SolanaPrivateKeyProvider,
   SolanaWallet,
 } from "@web3auth/solana-provider";
 import { OpenloginAdapter } from "@web3auth/openlogin-adapter";
 import { Web3Auth } from "@web3auth/modal";
-import {
-  Connection,
-  LAMPORTS_PER_SOL,
-  PublicKey,
-  SystemProgram,
-  Transaction,
-} from "@solana/web3.js";
+import { Connection, PublicKey, Transaction } from "@solana/web3.js";
 import { useSnackbar } from "./snackbarContext";
 import { useConnectUser } from "@/hooks/api-hooks/useUsers";
 import { useAuth } from "./authContext";
@@ -27,8 +19,7 @@ import nacl from "tweetnacl";
 import naclUtil from "tweetnacl-util";
 import { Web3AuthContextProps, Web3AuthProviderProps } from "./interfaces";
 
-const clientId =
-  "BIaVlcUD-SUS5jlLfPG-V9Bj_EsI19Z31-HitBrMEhWDnOb-jEqKuwtq4W6mTymgwMQhhM5E9RbunQKkYAqnlSc";
+const clientId = process.env.NEXT_PUBLIC_CLIENT_ID;
 
 const chainConfig = {
   chainNamespace: CHAIN_NAMESPACES.SOLANA,

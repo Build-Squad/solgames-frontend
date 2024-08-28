@@ -34,34 +34,39 @@ const GameInstructionModal: React.FC<{
   const { signMessage, verifySignature } = useWeb3Auth();
 
   const handleSignMessage = async () => {
+    // only handling for web3auth
     if (user?.publicKey) {
-      let isValid = false;
-      const { base64Signature, message } = await signMessage();
-      if (acceptorPubKey) {
-        isValid =
-          isValid ||
-          verifySignature(
-            message,
-            base64Signature,
-            new PublicKey(acceptorPubKey)
+      if (user?.verifier == "web3auth") {
+        let isValid = false;
+        const { base64Signature, message } = await signMessage();
+        if (acceptorPubKey) {
+          isValid =
+            isValid ||
+            verifySignature(
+              message,
+              base64Signature,
+              new PublicKey(acceptorPubKey)
+            );
+        }
+        if (creatorPubKey) {
+          isValid =
+            isValid ||
+            verifySignature(
+              message,
+              base64Signature,
+              new PublicKey(creatorPubKey)
+            );
+        }
+        if (isValid) onClose();
+        else {
+          showMessage(
+            "You're not a valid user for this game! Error from signing the message!",
+            "error"
           );
-      }
-      if (creatorPubKey) {
-        isValid =
-          isValid ||
-          verifySignature(
-            message,
-            base64Signature,
-            new PublicKey(creatorPubKey)
-          );
-      }
-      if (isValid) onClose();
-      else {
-        showMessage(
-          "You're not a valid user for this game! Error from signing the message!",
-          "error"
-        );
-        router.push("my-games");
+          router.push("my-games");
+        }
+      } else {
+        onClose();
       }
     }
   };

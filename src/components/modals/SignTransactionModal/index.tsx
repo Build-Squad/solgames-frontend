@@ -15,7 +15,7 @@ import { useAcceptGame } from "@/hooks/api-hooks/useGames";
 import { useWeb3Auth } from "@/context/web3AuthProvider";
 import { useRouter } from "next/navigation";
 import { useExecuteEscrow } from "@/hooks/api-hooks/useEscrow";
-import { CreateEscrowResponse } from "@/api-services/interfaces/escrowInterface";
+import { CreateAndDepositEscrowResponse } from "@/api-services/interfaces/escrowInterface";
 import { clusterApiUrl, Connection, Transaction } from "@solana/web3.js";
 import { useWallet } from "@solana/wallet-adapter-react";
 
@@ -37,7 +37,8 @@ interface SignTransactionProps {
   betAmount: string;
   createGame?: () => Promise<void>;
   inviteCode: string;
-  escrowData: CreateEscrowResponse["data"];
+  // Need to change for accept and deposit as well
+  escrowData: CreateAndDepositEscrowResponse["data"];
 }
 
 const SignTransactionModal = ({
@@ -120,8 +121,8 @@ const SignTransactionModal = ({
   };
 
   // 4)
-  // After the funds are transferred, store the transaction details in the DB
-  // and mark the transaction as completed
+  // After the funds are transferred, execute the transaction
+  // and store the transaction details in the DB
   const executeEscrowTransaction = async (
     signedTransaction: string,
     userRole: "Creator" | "Acceptor"
@@ -129,8 +130,8 @@ const SignTransactionModal = ({
     try {
       const exeRes = await executeEscrowMutateAsync({
         signedTransaction: signedTransaction,
-        transactionId: escrowData?.transactionId,
-        vaultId: escrowData?.vaultId,
+        transactionId: escrowData?.depositSerializedTransaction?.transactionId,
+        vaultId: escrowData?.escrowDetails?.vaultId,
         inviteCode,
         userId: user?.id,
         userRole,
@@ -152,12 +153,13 @@ const SignTransactionModal = ({
     let tx;
     if (user?.verifier == "wallet") {
       tx = await signTransactionWithSolanaWallet(
-        escrowData?.serializedTransaction
+        escrowData?.depositSerializedTransaction?.serializedTransaction
       );
     } else {
-      tx = await transfer(escrowData?.serializedTransaction);
+      tx = await transfer(
+        escrowData?.depositSerializedTransaction?.serializedTransaction
+      );
     }
-    console.log("tx === ", tx);
     if (tx.success) {
       const executeSuccessfully = await executeEscrowTransaction(
         tx?.data?.encodedSerializedSignedTx,
@@ -183,10 +185,12 @@ const SignTransactionModal = ({
     let tx;
     if (user?.verifier == "wallet") {
       tx = await signTransactionWithSolanaWallet(
-        escrowData?.serializedTransaction
+        escrowData?.depositSerializedTransaction?.serializedTransaction
       );
     } else {
-      tx = await transfer(escrowData?.serializedTransaction);
+      tx = await transfer(
+        escrowData?.depositSerializedTransaction?.serializedTransaction
+      );
     }
     if (tx.success) {
       const executeSuccessfully = await executeEscrowTransaction(
@@ -246,7 +250,7 @@ const SignTransactionModal = ({
           <b>Sender address</b> : {user?.publicKey}
         </Typography>
         <Typography variant="body2" sx={{ mt: 1 }}>
-          <b>Escrow id</b> : {escrowData?.vaultId}
+          <b>Escrow id</b> : {escrowData?.escrowDetails?.vaultId}
         </Typography>
         <Divider sx={{ my: 2 }} />
         <Box display="flex" justifyContent="space-between" mb={1}>
