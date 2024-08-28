@@ -166,7 +166,8 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
   // Function to handle SOL transfer
   const transfer = async (serializedTransaction: string) => {
     if (!provider) {
-      throw new Error("Provider is not initialized.");
+      showMessage("Provider is not initialized.", "info");
+      return;
     }
 
     setIsLoading(true);
@@ -214,7 +215,7 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
       return {
         data: { encodedSerializedSignedTx, signature, serializedSignedTx },
         success: true,
-        message: "Transaction Successful!",
+        message: "Transaction Successfully executed!",
       };
     } catch (error) {
       console.log("error: ", error);

@@ -16,6 +16,8 @@ import { useWeb3Auth } from "@/context/web3AuthProvider";
 import { useRouter } from "next/navigation";
 import { useExecuteEscrow } from "@/hooks/api-hooks/useEscrow";
 import { CreateEscrowResponse } from "@/api-services/interfaces/escrowInterface";
+import { clusterApiUrl, Connection, Transaction } from "@solana/web3.js";
+import { useWallet } from "@solana/wallet-adapter-react";
 
 const style = {
   position: "absolute",
@@ -56,6 +58,67 @@ const SignTransactionModal = ({
   const { transfer } = useWeb3Auth();
   const { executeEscrowMutateAsync } = useExecuteEscrow();
 
+  const { publicKey, signTransaction } = useWallet();
+
+  // For Solana wallets
+  const signTransactionWithSolanaWallet = async (
+    serializedTransaction: string
+  ) => {
+    try {
+      if (!publicKey || !signTransaction) {
+        showMessage(
+          "Wallet not connected or no signing capability available.",
+          "info"
+        );
+        return {
+          data: null,
+          success: false,
+          message: "Account not connected!",
+        };
+      }
+      const connection = new Connection(clusterApiUrl("devnet"));
+      const transaction = Transaction.from(
+        Buffer.from(serializedTransaction, "base64")
+      );
+      const signedTransaction = await signTransaction(transaction);
+
+      // Serialize the signed transaction
+      const serializedSignedTx = signedTransaction.serialize();
+      const encodedSerializedSignedTx = serializedSignedTx.toString("base64");
+
+      // Send the serialized signed transaction to the Solana network
+      const signature = await connection.sendRawTransaction(
+        serializedSignedTx,
+        {
+          skipPreflight: false,
+        }
+      );
+
+      // Confirm the transaction
+      const confirmation = await connection.confirmTransaction(
+        signature,
+        "confirmed"
+      );
+
+      if (confirmation.value.err) {
+        throw new Error();
+      }
+
+      return {
+        data: { encodedSerializedSignedTx },
+        success: true,
+        message: "Transaction Successfully executed!",
+      };
+    } catch (error) {
+      console.error("Error signing the transaction: ", error);
+      return {
+        data: null,
+        success: false,
+        message: "Transfer failed!",
+      };
+    }
+  };
+
   // 4)
   // After the funds are transferred, store the transaction details in the DB
   // and mark the transaction as completed
@@ -85,7 +148,16 @@ const SignTransactionModal = ({
   // 3.1)
   // Transfer the funds by signing the transaction as a creator
   const handleCreateGame = async () => {
-    const tx = await transfer(escrowData?.serializedTransaction);
+    setIsLoading(true);
+    let tx;
+    if (user?.verifier == "wallet") {
+      tx = await signTransactionWithSolanaWallet(
+        escrowData?.serializedTransaction
+      );
+    } else {
+      tx = await transfer(escrowData?.serializedTransaction);
+    }
+    console.log("tx === ", tx);
     if (tx.success) {
       const executeSuccessfully = await executeEscrowTransaction(
         tx?.data?.encodedSerializedSignedTx,
@@ -102,12 +174,20 @@ const SignTransactionModal = ({
     } else {
       showMessage(tx.message, "error");
     }
+    setIsLoading(false);
   };
 
   // 3.2)
   // Transfer the funds by signing the transaction as an acceptor
   const handleAcceptGame = async () => {
-    const tx = await transfer(escrowData?.serializedTransaction);
+    let tx;
+    if (user?.verifier == "wallet") {
+      tx = await signTransactionWithSolanaWallet(
+        escrowData?.serializedTransaction
+      );
+    } else {
+      tx = await transfer(escrowData?.serializedTransaction);
+    }
     if (tx.success) {
       const executeSuccessfully = await executeEscrowTransaction(
         tx?.data?.encodedSerializedSignedTx,
