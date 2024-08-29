@@ -1,4 +1,4 @@
-import { useState, forwardRef } from "react";
+import { useState, forwardRef, useEffect } from "react";
 import {
   Button,
   Dialog,
@@ -9,6 +9,7 @@ import {
   TextField,
   Box,
   InputAdornment,
+  CircularProgress,
 } from "@mui/material";
 import { TransitionProps } from "@mui/material/transitions";
 import { Questrial } from "next/font/google";
@@ -20,6 +21,8 @@ import { useCreateGame } from "@/hooks/api-hooks/useGames";
 import { useLoader } from "@/context/loaderContext";
 import { generateInviteCode } from "@/utils/helper";
 import CreateCelebrationModal from "../createCelebrationModal";
+import SignTransactionModal from "../SignTransactionModal";
+import { useCreateEscrow } from "@/hooks/api-hooks/useEscrow";
 
 const questrial = Questrial({
   weight: "400",
@@ -52,44 +55,82 @@ const CreateGameModal = ({ handleClose }) => {
     currentDateTime.setMinutes(currentDateTime.getMinutes() + 2);
     return currentDateTime.toTimeString().split(" ")[0].substring(0, 5);
   });
-  const [isDateTimeValid, setIsDateTimeValid] = useState(true);
   const { showMessage } = useSnackbar();
   const { user } = useAuth();
   const { createGameMutateAsync } = useCreateGame();
   const { showLoader, hideLoader } = useLoader();
-  const [inviteCode, setInviteCode] = useState("");
+  const [inviteCode, setInviteCode] = useState(generateInviteCode());
   const [isCelebrationModalOpen, setIsCelebrationModalOpen] = useState(false);
+  const [transactionModalOpen, setTransactionModalOpen] = useState(false);
 
-  const validateDateTime = (selectedDate, selectedTime) => {
+  const {
+    isCreateEscrowLoading,
+    createEscrowResponse,
+    createEscrowMutateAsync,
+  } = useCreateEscrow();
+
+  // 1)
+  // First step an escrow and a transaction to deposit funds is created to transfer funds.
+  // After that on Sign transaction screen
+  const handleCreateEscrow = async () => {
+    if (validateDateTime(date, time, betAmount)) {
+      try {
+        const res = await createEscrowMutateAsync({
+          amount: parseFloat(betAmount),
+          publicKey: user?.publicKey,
+          inviteCode: inviteCode,
+        });
+        if (res.success) {
+          showMessage(res.message, "success");
+          setTransactionModalOpen(true);
+        } else {
+          showMessage(res.message, "error");
+        }
+      } catch (e) {
+        showMessage("Something went wrong!", "error");
+      }
+    }
+  };
+
+  // 5.1)
+  // After all the funds are transferred successfully, create the game with the
+  // game details and creator details
+  const createGame = async () => {
+    showLoader();
+    try {
+      const res = await createGameMutateAsync({
+        betAmount: parseFloat(betAmount),
+        inviteCode: inviteCode,
+        gameDateTime: `${date}T${time}:00`,
+        creatorId: user.id,
+      });
+      if (res.success) {
+        setIsCelebrationModalOpen(true);
+        showMessage(res.message, "success");
+      } else {
+        showMessage(res.message, "error");
+      }
+    } catch (err) {
+      showMessage("Something went wrong!", "error");
+    }
+    hideLoader();
+  };
+
+  const validateDateTime = (selectedDate, selectedTime, betAmount) => {
     const selectedDateTime = new Date(`${selectedDate}T${selectedTime}`);
     const currentDateTime = new Date();
     currentDateTime.setMinutes(currentDateTime.getMinutes() + 1);
 
-    if (selectedDateTime > currentDateTime) {
-      setIsDateTimeValid(true);
-      return true;
-    } else {
-      setIsDateTimeValid(false);
-      return false;
-    }
-  };
+    const parsedAmount = parseFloat(betAmount);
+    const isValidBetAmount = !isNaN(parsedAmount) && parsedAmount > 0;
 
-  const handleCreateGame = async () => {
-    showLoader();
-    if (validateDateTime(date, time)) {
-      const newInviteCode = generateInviteCode();
-      await createGameMutateAsync({
-        betAmount: parseFloat(betAmount),
-        inviteCode: newInviteCode,
-        gameDateTime: `${date}T${time}:00`,
-        creatorId: user.id,
-      });
-      setInviteCode(newInviteCode);
-      setIsCelebrationModalOpen(true);
-    } else {
-      showMessage("Invalid input!", "error");
-    }
-    hideLoader();
+    if (!isValidBetAmount) {
+      showMessage("Invalid bet amount!", "error");
+      return false;
+    } else if (selectedDateTime < currentDateTime) {
+      showMessage("Date and time must be at least 1 minute ahead!", "error");
+      return false;
+    } else return true;
   };
 
   const handleCelebrationModalClose = () => {
@@ -173,19 +214,10 @@ const CreateGameModal = ({ handleClose }) => {
               type="date"
               variant="filled"
               value={date}
-              onChange={(e) => {
-                setDate(e.target.value);
-                validateDateTime(e.target.value, time);
-              }}
+              onChange={(e) => setDate(e.target.value)}
               InputLabelProps={{ shrink: true }}
               inputProps={{ min: currentDateTime.currentDate }}
               fullWidth
-              error={!isDateTimeValid}
-              helperText={
-                !isDateTimeValid
-                  ? "Date and time must be at least 1 minute ahead"
-                  : ""
-              }
               sx={{
                 backgroundColor: "#2d2d44",
                 borderRadius: "5px",
@@ -198,10 +230,7 @@ const CreateGameModal = ({ handleClose }) => {
               type="time"
               variant="filled"
               value={time}
-              onChange={(e) => {
-                setTime(e.target.value);
-                validateDateTime(date, e.target.value);
-              }}
+              onChange={(e) => setTime(e.target.value)}
               InputLabelProps={{ shrink: true }}
               inputProps={{
                 min:
@@ -210,12 +239,6 @@ const CreateGameModal = ({ handleClose }) => {
                     : undefined,
               }}
               fullWidth
-              error={!isDateTimeValid}
-              helperText={
-                !isDateTimeValid
-                  ? "Date and time must be at least 1 minute ahead"
-                  : ""
-              }
               sx={{
                 backgroundColor: "#2d2d44",
                 borderRadius: "5px",
@@ -242,7 +265,7 @@ const CreateGameModal = ({ handleClose }) => {
             Cancel
           </Button>
           <Button
-            onClick={handleCreateGame}
+            onClick={handleCreateEscrow}
             sx={{
               px: 4,
               fontWeight: "bold",
@@ -253,7 +276,14 @@ const CreateGameModal = ({ handleClose }) => {
               },
             }}
           >
-            Create Game
+            {isCreateEscrowLoading ? (
+              <CircularProgress
+                size={24}
+                sx={{ fontWeight: "bold", color: "#000" }}
+              />
+            ) : (
+              "Create Game"
+            )}
           </Button>
         </DialogActions>
       </Dialog>
@@ -261,6 +291,15 @@ const CreateGameModal = ({ handleClose }) => {
         open={isCelebrationModalOpen}
         handleClose={handleCelebrationModalClose}
         inviteCode={inviteCode}
+      />
+      <SignTransactionModal
+        open={transactionModalOpen}
+        handleClose={() => setTransactionModalOpen(false)}
+        createGame={createGame}
+        type={"CREATE"}
+        betAmount={betAmount}
+        inviteCode={inviteCode}
+        escrowData={createEscrowResponse?.data}
       />
     </>
   );

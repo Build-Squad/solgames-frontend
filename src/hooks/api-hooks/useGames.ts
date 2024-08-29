@@ -1,12 +1,28 @@
 import GameServices from "@/api-services/GameServices";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { useCallback, useState } from "react";
 
 export const useGetAllGames = (id: string) => {
-  return useQuery({
-    queryKey: [`all-games-with-id-${id}`],
-    queryFn: () => GameServices.getGamesWithId(id),
-    enabled: !!id,
+  const [currentId, setCurrentId] = useState<string>(id);
+
+  const { data, isLoading } = useQuery({
+    queryKey: [`all-games-with-id-${currentId}`],
+    queryFn: () => GameServices.getGamesWithId(currentId),
+    enabled: !!currentId,
   });
+
+  const updatedRefetch = useCallback(
+    (id: string) => {
+      setCurrentId(id);
+    },
+    [id]
+  );
+
+  return {
+    data,
+    isLoading,
+    updatedRefetch,
+  };
 };
 
 export const useGetGameWithInviteCode = (inviteCode: string) => {

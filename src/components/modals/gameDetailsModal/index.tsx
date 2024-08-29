@@ -7,30 +7,17 @@ import {
   Button,
   Typography,
   Grid,
-  Badge,
   Chip,
   Box,
 } from "@mui/material";
-import chess_image from "../../../assets/chess2.jpg";
 import { STATUS_COLORS } from "@/utils/constants";
-import { useRouter } from "next/navigation";
 import { differenceInSeconds } from "date-fns";
+import { Game } from "@/types/game";
+import { useRouter } from "next/navigation";
 
 interface GameDetailsDialogProps {
   handleClose: () => void;
-  game: {
-    id: string;
-    token: string;
-    betAmount: string;
-    inviteCode: string;
-    gameDateTime: string;
-    isGameAccepted: boolean;
-    createdAt: string;
-    updatedAt: string;
-    acceptorId?: string;
-    creatorId?: string;
-    gameStatus?: string;
-  };
+  game: Game;
 }
 
 const formatTimeLeft = (seconds: number) => {
@@ -43,10 +30,30 @@ const formatTimeLeft = (seconds: number) => {
   ).padStart(2, "0")}m:${String(remainingSeconds).padStart(2, "0")}s`;
 };
 
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case "Scheduled":
+      return STATUS_COLORS.Scheduled.background;
+    case "Accepted":
+      return STATUS_COLORS.Accepted.background;
+    case "InProgress":
+      return STATUS_COLORS.InProgress.background;
+    case "Completed":
+      return STATUS_COLORS.Completed.background;
+    case "Draw":
+      return STATUS_COLORS.Draw.background;
+    case "Expired":
+      return STATUS_COLORS.Expired.background;
+    default:
+      return "#ccc";
+  }
+};
+
 const GameDetailsDialog: React.FC<GameDetailsDialogProps> = ({
   handleClose,
   game,
 }) => {
+  const router = useRouter();
   const [timeLeft, setTimeLeft] = useState<number>(0);
 
   const gameDate = new Date(game?.gameDateTime);
@@ -62,38 +69,68 @@ const GameDetailsDialog: React.FC<GameDetailsDialogProps> = ({
   useEffect(() => {
     const gameDate = new Date(game.gameDateTime);
     const interval = setInterval(() => {
-      setTimeLeft(differenceInSeconds(gameDate, new Date()));
+      const newTimeLeft = differenceInSeconds(gameDate, new Date());
+      if (newTimeLeft <= 0) {
+        setTimeLeft(0);
+        clearInterval(interval);
+      } else {
+        setTimeLeft(newTimeLeft);
+      }
     }, 1000);
 
     return () => clearInterval(interval);
   }, [game.gameDateTime]);
 
   const handlePlay = () => {
-    // router.push(`/play?inviteCode=${game.inviteCode}`);
+    router.push(`/play?inviteCode=${game.inviteCode}`);
   };
 
   return (
     <Dialog
       open={true}
       onClose={handleClose}
-      maxWidth="lg"
+      maxWidth="md"
       fullWidth
       sx={{
         "& .MuiDialog-paper": {
-          boxShadow: "10px 10px 10px 10px black",
-          backgroundColor: "black",
+          boxShadow: "0 4px 8px rgba(0, 0, 0, 0.3)",
+          backgroundColor: "#121212",
+          padding: "16px",
         },
       }}
     >
       <DialogTitle
         sx={{
-          color: "#fff",
-          fontWeight: "bold",
           textAlign: "center",
-          fontSize: "1.5rem",
+          mb: 4,
         }}
       >
-        Game Details
+        <Typography
+          component={"span"}
+          sx={{
+            color: "#fff",
+            fontWeight: "bold",
+            textAlign: "center",
+            fontSize: "1.5rem",
+            position: "relative",
+          }}
+        >
+          Game Details
+          <Chip
+            size="small"
+            label={game.gameStatus}
+            sx={{
+              paddingX: "4px",
+              fontSize: "12px",
+              backgroundColor: getStatusColor(game.gameStatus),
+              fontWeight: "bold",
+              position: "absolute",
+              top: 0,
+              left: "100%",
+              transform: "translateY(-40%)",
+            }}
+          />
+        </Typography>
       </DialogTitle>
       <DialogContent
         sx={{
@@ -103,38 +140,86 @@ const GameDetailsDialog: React.FC<GameDetailsDialogProps> = ({
         }}
       >
         <Grid container spacing={2}>
-          <Grid item xs={6}>
-            <Typography variant="subtitle1" fontWeight="bold">
-              ID:
-            </Typography>
-            <Typography>{game?.id}</Typography>
-          </Grid>
-          <Grid item xs={6} textAlign={"right"}>
+          {game?.gameStatus == STATUS_COLORS.Completed.value ? (
+            <Grid
+              item
+              xs={6}
+              display="flex"
+              columnGap={2}
+              alignItems={"center"}
+            >
+              <Typography variant="subtitle1" fontWeight="bold">
+                Winner:
+              </Typography>
+              <Typography>{game?.winnerId}</Typography>
+            </Grid>
+          ) : null}
+          {game?.creator ? (
+            <Grid
+              item
+              xs={6}
+              display="flex"
+              columnGap={2}
+              alignItems={"center"}
+            >
+              <Typography variant="subtitle1" fontWeight="bold">
+                Game Creator:
+              </Typography>
+              <Typography>
+                {game?.creator?.name ?? game?.creator?.publicKey}
+              </Typography>
+            </Grid>
+          ) : null}
+          {game?.acceptor ? (
+            <Grid
+              item
+              xs={6}
+              display="flex"
+              columnGap={2}
+              alignItems={"center"}
+            >
+              <Typography variant="subtitle1" fontWeight="bold">
+                Game Acceptor:
+              </Typography>
+              <Typography>
+                {game?.acceptor?.name ?? game?.acceptor?.publicKey}
+              </Typography>
+            </Grid>
+          ) : null}
+          <Grid item xs={6} display="flex" columnGap={2} alignItems={"center"}>
             <Typography variant="subtitle1" fontWeight="bold">
               Bet Amount:
             </Typography>
-            <Chip label={game?.betAmount} color="primary" />
+            <Chip
+              label={`${game?.betAmount} SOL`}
+              sx={{ color: "white", borderColor: "white", fontWeight: "bold" }}
+              variant="outlined"
+            />
           </Grid>
-          <Grid item xs={6}>
+          <Grid item xs={6} display="flex" columnGap={2} alignItems={"center"}>
             <Typography variant="subtitle1" fontWeight="bold">
               Invite Code:
             </Typography>
             <Typography>{game?.inviteCode}</Typography>
           </Grid>
-          <Grid item xs={6} textAlign={"right"}>
+          <Grid item xs={6} display="flex" columnGap={2} alignItems={"center"}>
             <Typography variant="subtitle1" fontWeight="bold">
               Game Date Time:
             </Typography>
             <Typography>{gameDate.toLocaleString()}</Typography>
           </Grid>
-          {game?.acceptorId && (
-            <Grid item xs={12}>
-              <Typography variant="subtitle1" fontWeight="bold">
-                Acceptor ID:
-              </Typography>
-              <Typography>{game.acceptorId}</Typography>
-            </Grid>
-          )}
+          <Grid item xs={6} display="flex" columnGap={2} alignItems={"center"}>
+            <Typography variant="subtitle1" fontWeight="bold">
+              Status:
+            </Typography>
+            <Chip
+              label={game.gameStatus}
+              sx={{
+                backgroundColor: getStatusColor(game.gameStatus),
+                fontWeight: "bold",
+              }}
+            />
+          </Grid>
           {timeLeft > 0 &&
             [
               STATUS_COLORS.Scheduled.value,
@@ -177,7 +262,7 @@ const GameDetailsDialog: React.FC<GameDetailsDialogProps> = ({
             onClick={handlePlay}
             variant="contained"
             sx={{
-              color: "black",
+              color: "#fff",
               backgroundColor: "#FF5C00",
               fontWeight: "bold",
               transition: "transform .1s",

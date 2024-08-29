@@ -1,11 +1,5 @@
 "use client";
-import React, {
-  createContext,
-  ReactNode,
-  useContext,
-  useEffect,
-  useState,
-} from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import { CHAIN_NAMESPACES, IProvider, WEB3AUTH_NETWORK } from "@web3auth/base";
 import {
   SolanaPrivateKeyProvider,
@@ -13,13 +7,22 @@ import {
 } from "@web3auth/solana-provider";
 import { OpenloginAdapter } from "@web3auth/openlogin-adapter";
 import { Web3Auth } from "@web3auth/modal";
-import { Connection, PublicKey } from "@solana/web3.js";
+import {
+  Connection,
+  Keypair,
+  PublicKey,
+  Transaction,
+  VersionedTransaction,
+} from "@solana/web3.js";
 import { useSnackbar } from "./snackbarContext";
 import { useConnectUser } from "@/hooks/api-hooks/useUsers";
 import { useAuth } from "./authContext";
+import nacl from "tweetnacl";
+import naclUtil from "tweetnacl-util";
+import { Web3AuthContextProps, Web3AuthProviderProps } from "./interfaces";
+import { hexToUint8Array } from "@/utils/helper";
 
-const clientId =
-  "BIaVlcUD-SUS5jlLfPG-V9Bj_EsI19Z31-HitBrMEhWDnOb-jEqKuwtq4W6mTymgwMQhhM5E9RbunQKkYAqnlSc";
+const clientId = process.env.NEXT_PUBLIC_CLIENT_ID;
 
 const chainConfig = {
   chainNamespace: CHAIN_NAMESPACES.SOLANA,
@@ -46,21 +49,6 @@ const web3auth = new Web3Auth({
 const openloginAdapter = new OpenloginAdapter({ privateKeyProvider });
 web3auth.configureAdapter(openloginAdapter);
 
-interface Web3AuthContextProps {
-  provider: IProvider | null;
-  loggedIn: boolean;
-  login: () => Promise<void>;
-  logout: () => Promise<void>;
-  getUserInfo: () => Promise<any>;
-  getAccounts: (provider: IProvider) => Promise<string[] | string>;
-  getBalance: () => Promise<string>;
-  signMessage: (message: string) => Promise<string>;
-}
-
-interface Web3AuthProviderProps {
-  children: ReactNode;
-}
-
 const Web3AuthContext = createContext<Web3AuthContextProps | undefined>(
   undefined
 );
@@ -74,6 +62,7 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
   const { connectionMutateAsync } = useConnectUser();
   const [isInitialized, setIsInitialized] = useState(false);
   const { login: loginUser, logout: logoutUser } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
 
   const init = async () => {
     try {
@@ -115,32 +104,8 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
   };
 
   const createUser = async ({ userInfo, publicKey }) => {
-    const {
-      email,
-      name,
-      profileImage,
-      typeOfLogin,
-      verifier,
-      verifierId,
-      aggregateVerifier,
-      isMfaEnabled,
-      idToken,
-    } = userInfo;
     try {
-      const payload = {
-        email,
-        name,
-        profileImage,
-        typeOfLogin,
-        verifier,
-        verifierId,
-        aggregateVerifier,
-        isMfaEnabled,
-        idToken,
-        publicKey,
-      };
-
-      const res = await connectionMutateAsync(payload);
+      const res = await connectionMutateAsync({ ...userInfo, publicKey });
       loginUser(res.data);
       showMessage(res.message, "success");
     } catch (e) {
@@ -151,11 +116,16 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
   };
 
   const logout = async () => {
-    await web3auth.logout();
-    setProvider(null);
-    setLoggedIn(false);
-    logoutUser();
-    showMessage("Logged out!", "success");
+    try {
+      await web3auth.logout();
+      setProvider(null);
+      setLoggedIn(false);
+      logoutUser();
+      showMessage("Logged out!", "success");
+    } catch (e) {
+      console.error(e);
+      showMessage("Something went wrong while logging out!", "error");
+    }
   };
 
   const getUserInfo = async () => {
@@ -171,10 +141,11 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
   };
 
   //Assuming user is already logged in.
-  const getPrivateKey = async () => {
+  const getPrivateKey = async (): Promise<string> => {
     const privateKey = await web3auth.provider.request({
       method: "solanaPrivateKey",
     });
+    return typeof privateKey == "string" ? privateKey : "";
   };
 
   const getBalance = async () => {
@@ -187,17 +158,102 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
     const balance = await connection.getBalance(new PublicKey(accounts[0]));
     return (balance / 1e9).toString(); // Convert lamports to SOL
   };
-
-  const signMessage = async (message: string) => {
+  // Function to handle SOL transfer
+  const transfer = async (serializedTransaction: string) => {
     if (!provider) {
-      return "provider not initialized yet";
+      showMessage("Provider is not initialized.", "info");
+      return;
     }
-    const solanaWallet = new SolanaWallet(provider);
 
-    const msg = Buffer.from(message, "utf8");
-    const msgUint8Array = new Uint8Array(msg);
-    await solanaWallet.signMessage(msgUint8Array);
-    return;
+    setIsLoading(true);
+    try {
+      const solanaWallet = new SolanaWallet(provider);
+
+      // Request the connected wallet accounts
+      const connection = new Connection(chainConfig.rpcTarget);
+
+      // Deserialize the transaction received from the backend
+      const transaction = VersionedTransaction.deserialize(
+        new Uint8Array(Buffer.from(serializedTransaction, "base64"))
+      );
+
+      // Sign the transaction with the user's wallet
+      const signedTx = await solanaWallet.signTransaction(transaction);
+
+      // // Serialize the signed transaction
+      const serializedSignedTx = signedTx.serialize();
+      const encodedSerializedSignedTx =
+        Buffer.from(serializedSignedTx).toString("base64");
+
+      return {
+        data: {
+          encodedSerializedSignedTx,
+          serializedSignedTx,
+        },
+        success: true,
+        message: "Transaction Successfully signed!",
+      };
+    } catch (error) {
+      console.log("error: ", error);
+      return {
+        data: null,
+        success: false,
+        message: "Transfer failed!",
+      };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const signMessage = async () => {
+    setIsLoading(true);
+    try {
+      if (!provider) {
+        throw new Error("Web3Auth provider is not initialized.");
+      }
+      // Convert message to Uint8Array
+      const message = "Authenticate to confirm your identity for this game.";
+      const messageBytes = new TextEncoder().encode(message);
+
+      // Sign the message
+      const solanaWallet = new SolanaWallet(provider);
+      const signature = await solanaWallet.signMessage(messageBytes);
+      const base64Signature = Buffer.from(signature).toString("base64");
+      setIsLoading(false);
+
+      return { base64Signature: base64Signature, message: message };
+    } catch (error) {
+      console.error("Error during authentication:", error);
+      setIsLoading(false);
+      return {};
+    }
+  };
+
+  const verifySignature = (
+    message: string,
+    signature: string,
+    publicKey: PublicKey
+  ): boolean => {
+    try {
+      // Convert message to Uint8Array
+      const messageBytes = naclUtil.decodeUTF8(message);
+
+      // Convert signature string to Uint8Array
+      const signatureBytes = naclUtil.decodeBase64(signature);
+
+      // Convert PublicKey to Uint8Array
+      const publicKeyBytes = publicKey.toBytes();
+
+      // Verify the signature using tweetnacl
+      return nacl.sign.detached.verify(
+        messageBytes,
+        signatureBytes,
+        publicKeyBytes
+      );
+    } catch (error) {
+      console.error("Error verifying signature:", error);
+      return false;
+    }
   };
 
   return (
@@ -210,7 +266,10 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
         getUserInfo,
         getAccounts,
         getBalance,
+        transfer,
+        isLoading,
         signMessage,
+        verifySignature,
       }}
     >
       {children}

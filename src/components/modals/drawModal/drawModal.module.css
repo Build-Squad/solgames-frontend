@@ -1,0 +1,28 @@
+/* drawModal.module.css */
+
+.drawDialogPaper {
+    background-color: #f8f9fa; /* Light grey background for a neutral and balanced look */
+    color: #343a40; /* Dark grey text color for readability */
+  }
+  
+  .drawTitle {
+    color: #343a40; /* Dark grey color for title */
+    font-size: 24px;
+    font-weight: bold;
+    text-align: center;
+  }
+  
+  .drawContent {
+    text-align: center;
+    padding: 20px;
+  }
+  
+  .drawButton {
+    background-color: #e9ecef; /* Very light grey button color */
+    color: #343a40; /* Dark grey text color */
+    font-weight: bold;
+    &:hover {
+      background-color: #ced4da; /* Slightly darker grey on hover */
+    }
+  }
+  

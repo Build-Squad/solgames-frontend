@@ -8,3 +8,6 @@ export const generateInviteCode = (length = 8) => {
   }
   return inviteCode;
 };
+export function hexToUint8Array(hexString: string) {
+  return Uint8Array.from(Buffer.from(hexString, 'hex'));
+}

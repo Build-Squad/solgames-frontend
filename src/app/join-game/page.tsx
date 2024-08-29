@@ -1,9 +1,10 @@
 "use client";
-import DummySignTransaction from "@/components/modals/dummySignTransaction";
+import SignTransactionModal from "@/components/modals/SignTransactionModal";
 import NoDataFound from "@/components/noDataFound";
 import { useAuth } from "@/context/authContext";
 import { useSnackbar } from "@/context/snackbarContext";
 import { useWeb3Auth } from "@/context/web3AuthProvider";
+import { useDepositAcceptTransaction } from "@/hooks/api-hooks/useEscrow";
 import { useGetGameWithInviteCode } from "@/hooks/api-hooks/useGames";
 import { STATUS_COLORS } from "@/utils/constants";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -15,28 +16,16 @@ export default function JoinGame({}: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const joiningCode = searchParams.get("joiningCode");
-  const [isTransactionSigned, setIsTransactionSigned] = useState(false);
 
   const { user } = useAuth();
-  const { login, signMessage } = useWeb3Auth();
+  const { login } = useWeb3Auth();
   const { showMessage } = useSnackbar();
 
   const { data: gameData, refetch: refetchGameData } =
     useGetGameWithInviteCode(joiningCode);
 
-  useEffect(() => {
-    if (user?.id) {
-      signMessage("Signing a random message");
-    }
-  }, [user?.id]);
-
-  useEffect(() => {
-    if (isTransactionSigned) {
-      setTimeout(() => {
-        router.push("/my-games");
-      }, 3000);
-    }
-  }, [isTransactionSigned]);
+  const { depositAcceptGameResponse, depositAcceptGameMutateAsync } =
+    useDepositAcceptTransaction();
 
   useEffect(() => {
     if (
@@ -44,16 +33,31 @@ export default function JoinGame({}: Props) {
       (gameData.data.gameStatus !== STATUS_COLORS.Scheduled.value ||
         gameData.data.isGameAccepted)
     ) {
-      console.log("Show message");
       showMessage(
         "The game is completed or another player has already joined the game!",
         "error"
       );
       setTimeout(() => {
         router.back();
-      }, 5000);
+      }, 3000);
+    } else {
+      initializeAcceptGame();
     }
-  }, [gameData]);
+  }, [gameData, user?.id]);
+
+  const initializeAcceptGame = async () => {
+    try {
+      const res = await depositAcceptGameMutateAsync({
+        publicKey: user?.publicKey,
+        inviteCode: joiningCode,
+      });
+      if (!res.success) {
+        showMessage(res.message, "error");
+      }
+    } catch (e) {
+      showMessage("Something went wrong!", "error");
+    }
+  };
 
   if (!gameData?.success) {
     return <NoDataFound onRetry={refetchGameData} />;
@@ -69,11 +73,13 @@ export default function JoinGame({}: Props) {
   }
 
   return (
-    <DummySignTransaction
+    <SignTransactionModal
       open={true}
       handleClose={() => {}}
-      setIsTransactionSigned={setIsTransactionSigned}
-      joiningCode={joiningCode}
+      type={"ACCEPT"}
+      betAmount={gameData.data.betAmount}
+      inviteCode={joiningCode}
+      escrowData={depositAcceptGameResponse?.data}
     />
   );
 }

@@ -7,7 +7,8 @@ import {
   MenuItem,
   IconButton,
   Chip,
-  Typography,
+  Tabs,
+  Tab,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
@@ -30,7 +31,7 @@ const renderIsGameAccepted = (params) => {
       {params.value ? (
         <CheckCircle
           sx={{
-            color: "#2196F3",
+            color: "#4CAF50",
           }}
         />
       ) : (
@@ -89,15 +90,16 @@ const MyGames = () => {
   const { user } = useAuth();
   const {
     data: userGames,
-    refetch: refetchUserGames,
+    updatedRefetch,
     isLoading,
   } = useGetAllGames(user?.id);
   const [selectedGame, setSelectedGame] = useState(null);
+  const [tabValue, setTabValue] = useState(0);
   const { showMessage } = useSnackbar();
 
   useEffect(() => {
     if (user?.id) {
-      refetchUserGames();
+      updatedRefetch(user?.id);
     }
   }, [user?.id]);
 
@@ -105,8 +107,59 @@ const MyGames = () => {
     setSelectedGame(params?.row);
   };
 
+  const handleTabChange = (event, newValue) => {
+    setTabValue(newValue);
+  };
+
+  const filteredGames =
+    tabValue === 0
+      ? userGames?.filter((game) => game.creatorId === user?.id)
+      : userGames?.filter((game) => game.acceptorId === user?.id);
+
   return (
     <>
+      <Box display="flex" justifyContent="center">
+        <Tabs
+          value={tabValue}
+          onChange={handleTabChange}
+          sx={{ mt: 3 }}
+          TabIndicatorProps={{
+            sx: {
+              display: "none",
+            },
+          }}
+        >
+          <Tab
+            label="Games Created"
+            sx={{
+              backgroundColor: tabValue === 0 ? "#FF5C00" : "#f5f5f5",
+              borderRadius: "8px",
+              px: 10,
+              py: 2,
+              mx: 1,
+              fontWeight: "bold",
+              "&.MuiButtonBase-root": {
+                color: tabValue === 0 ? "white" : "black",
+              },
+            }}
+          />
+          <Tab
+            label="Games Accepted"
+            sx={{
+              color: "black",
+              backgroundColor: tabValue === 1 ? "#FF5C00" : "#f5f5f5",
+              borderRadius: "8px",
+              px: 10,
+              py: 2,
+              mx: 1,
+              fontWeight: "bold",
+              "&.MuiButtonBase-root": {
+                color: tabValue === 1 ? "white" : "black",
+              },
+            }}
+          />
+        </Tabs>
+      </Box>
       <Box
         sx={{
           display: "flex",
@@ -138,7 +191,7 @@ const MyGames = () => {
           }}
         >
           <DataGrid
-            rows={userGames ?? []}
+            rows={filteredGames ?? []}
             columns={[
               {
                 field: "id",

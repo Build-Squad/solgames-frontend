@@ -28,9 +28,8 @@ export default function JoinGameModal({ handleClose }) {
   };
 
   const joinGame = () => {
-    router.push(`/play?inviteCode=${inviteCode}`);
+    router.push(`/join-game?joiningCode=${inviteCode}`);
   };
-  
   return (
     <Dialog
       open={true}

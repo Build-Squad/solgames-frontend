@@ -9,8 +9,8 @@ import {
 } from "@mui/material";
 import { TransitionProps } from "@mui/material/transitions";
 import { forwardRef } from "react";
-import "./index.css";
-import { EmojiEvents } from "@mui/icons-material";
+import styles from "./looserModal.module.css";
+import { SentimentDissatisfied } from "@mui/icons-material";
 
 const Transition = forwardRef(function Transition(
   props: TransitionProps & {
@@ -21,7 +21,7 @@ const Transition = forwardRef(function Transition(
   return <Slide direction="up" ref={ref} {...props} />;
 });
 
-const Congratulations = ({ handleClose, playerName }) => {
+const LoserModal = ({ handleClose, content }) => {
   const router = useRouter();
 
   const handleClick = () => {
@@ -31,32 +31,33 @@ const Congratulations = ({ handleClose, playerName }) => {
   return (
     <Dialog
       open={true}
-      onClose={handleClose}
+      onClose={(event, reason) => {
+        if (reason && reason === "backdropClick") {
+          return;
+        }
+        handleClose();
+      }}
       TransitionComponent={Transition}
       fullWidth={true}
       maxWidth="md"
-      classes={{ paper: "congrats-dialog-paper" }}
+      classes={{ paper: styles.sorryDialogPaper }}
     >
       <DialogTitle>
-        <div className="congrats-title">Congratulations!</div>
+        <div className={styles.sorryTitle}>Game Over!</div>
       </DialogTitle>
       <DialogContent>
-        <div className="congrats-content">
-          <EmojiEvents style={{ fontSize: "200px" }} />
-          <p>You&rsquo;ve won the game, {playerName}!</p>
-          <p>
-            Checkmate! Your strategic moves have led you to victory. Keep up the
-            great play!
-          </p>
+        <div className={styles.sorryContent}>
+          <SentimentDissatisfied style={{ fontSize: "200px" }} />
+          {content}
         </div>
       </DialogContent>
       <DialogActions>
-        <Button className="congrats-button" onClick={handleClick}>
-          Continue
+        <Button className={styles.sorryButton} onClick={handleClick}>
+          Try Again
         </Button>
       </DialogActions>
     </Dialog>
   );
 };
 
-export default Congratulations;
+export default LoserModal;

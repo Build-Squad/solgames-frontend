@@ -17,6 +17,10 @@ import Button from "@mui/material/Button";
 import { useRouter } from "next/navigation";
 import { useWeb3Auth } from "@/context/web3AuthProvider";
 import { useAuth } from "@/context/authContext";
+import { useEffect, useState } from "react";
+import ConnectModal from "../modals/connectModal";
+import { useWallet } from "@solana/wallet-adapter-react";
+import { useSnackbar } from "@/context/snackbarContext";
 
 const drawerWidth = 240;
 const navLoggedInItems = [
@@ -34,12 +38,40 @@ const navLoggedOutItems = [
 
 const DrawerAppBar = () => {
   const router = useRouter();
-  const [mobileOpen, setMobileOpen] = React.useState(false);
-  const { login, logout } = useWeb3Auth();
+  const [openConnectModal, setOpenConnectModal] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const { logout } = useWeb3Auth();
+  const { disconnect, publicKey } = useWallet();
+  const { logout: logoutUser } = useAuth();
   const { user } = useAuth();
+  const { showMessage } = useSnackbar();
+
+  useEffect(() => {
+    if (user?.id) {
+      setOpenConnectModal(false);
+    }
+  }, [user?.id]);
 
   const handleDrawerToggle = () => {
     setMobileOpen((prevState) => !prevState);
+  };
+
+  const handleLogout = () => {
+    if (publicKey) {
+      try {
+        logoutUser();
+        showMessage("Logged out!", "success");
+        disconnect();
+      } catch (e) {
+        console.log("Error in disconnecting:", e);
+      }
+    } else {
+      try {
+        logout();
+      } catch (e) {
+        console.log("Error in logging out:", e);
+      }
+    }
   };
 
   const renderDrawerItems = (items) => {
@@ -146,7 +178,7 @@ const DrawerAppBar = () => {
                     px: 4,
                     fontWeight: "bold",
                   }}
-                  onClick={logout}
+                  onClick={handleLogout}
                 >
                   Logout
                 </Button>
@@ -163,7 +195,7 @@ const DrawerAppBar = () => {
                     px: 4,
                     fontWeight: "bold",
                   }}
-                  onClick={login}
+                  onClick={() => setOpenConnectModal(true)}
                 >
                   Connect
                 </Button>
@@ -192,6 +224,14 @@ const DrawerAppBar = () => {
           {drawer}
         </Drawer>
       </nav>
+      {openConnectModal ? (
+        <ConnectModal
+          open={openConnectModal}
+          onClose={() => {
+            setOpenConnectModal(false);
+          }}
+        />
+      ) : null}
     </Box>
   );
 };

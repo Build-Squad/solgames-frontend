@@ -15,7 +15,12 @@ import {
 } from "@solana/web3.js";
 
 export const GET = (req: Request) => {
-  console.log("GET called");
+  const url = new URL(req.url);
+  const betAmount = url.searchParams.get("betAmount");
+  const joiningCode = url.searchParams.get("joiningCode");
+
+  // We need the escrow account pubKey as well in the request and need to valid if that exists on our side. (Security reasons)
+
   const payload: ActionGetResponse = {
     icon: new URL("/chess2.jpg", new URL(req.url).origin).toString(),
     title: "Join my chess game",
@@ -24,26 +29,8 @@ export const GET = (req: Request) => {
     links: {
       actions: [
         {
-          href: "/api/actions/memo?amount=0.1",
-          label: "0.1 SOL",
-        },
-        {
-          href: "/api/actions/memo?amount=0.5",
-          label: "0.5 SOL",
-        },
-        {
-          href: "/api/actions/memo?amount=1.0",
-          label: "1.0 SOL",
-        },
-        {
-          href: "/api/actions/memo?amount={amount}",
-          label: "Send SOL",
-          parameters: [
-            {
-              name: "amount",
-              label: "Enter a SOL amount",
-            },
-          ],
+          href: `/api/actions/join?betAmount=${betAmount}&joiningCode=${joiningCode}`,
+          label: `${betAmount} SOL`,
         },
       ],
     },
@@ -70,13 +57,13 @@ export const POST = async (req: Request) => {
       });
     }
 
-    let amount: number = 0.1;
-    if (url.searchParams.has("amount")) {
-      const val = url.searchParams.get("amount");
+    let betAmount: number = 0.1;
+    if (url.searchParams.has("betAmount")) {
+      const val = url.searchParams.get("betAmount");
       try {
-        amount = parseFloat(val || "0.1");
+        betAmount = parseFloat(val || "0.1");
       } catch (err) {
-        throw "Invalid 'amount' input";
+        throw "Invalid 'bet amount' input";
       }
     }
 
@@ -87,7 +74,7 @@ export const POST = async (req: Request) => {
     const transaction = new Transaction().add(
       SystemProgram.transfer({
         fromPubkey: account,
-        lamports: amount * LAMPORTS_PER_SOL,
+        lamports: betAmount * LAMPORTS_PER_SOL,
         toPubkey: toPublicKey,
       })
     );

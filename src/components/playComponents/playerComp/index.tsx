@@ -9,9 +9,10 @@ type Props = {
   title: string;
   rank: string;
   pieces: string[];
+  timer: string | null;
 };
 
-const TimerComponent = () => (
+const TimerComponent = ({ timer }: { timer: string | null }) => (
   <Box
     display="inline-block"
     sx={{
@@ -21,7 +22,7 @@ const TimerComponent = () => (
     }}
   >
     <Typography sx={{ color: "white", fontWeight: "bold" }}>
-      04:20:00
+      {timer || "--:--"}
     </Typography>
   </Box>
 );
@@ -146,6 +147,7 @@ const PlayerComp = ({
   title,
   rank,
   pieces,
+  timer,
 }: Props) => (
   <Box
     textAlign={alignDirection}
@@ -178,7 +180,7 @@ const PlayerComp = ({
 
     {/* Timer */}
     <Box sx={{ mt: 2, paddingX: "20px" }}>
-      <TimerComponent />
+      <TimerComponent timer={timer} />
     </Box>
   </Box>
 );
