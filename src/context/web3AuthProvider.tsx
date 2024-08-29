@@ -1,23 +1,26 @@
 "use client";
 import React, { createContext, useContext, useEffect, useState } from "react";
-import {
-  CHAIN_NAMESPACES,
-  IProvider,
-  WEB3AUTH_NETWORK,
-} from "@web3auth/base";
+import { CHAIN_NAMESPACES, IProvider, WEB3AUTH_NETWORK } from "@web3auth/base";
 import {
   SolanaPrivateKeyProvider,
   SolanaWallet,
 } from "@web3auth/solana-provider";
 import { OpenloginAdapter } from "@web3auth/openlogin-adapter";
 import { Web3Auth } from "@web3auth/modal";
-import { Connection, PublicKey, Transaction } from "@solana/web3.js";
+import {
+  Connection,
+  Keypair,
+  PublicKey,
+  Transaction,
+  VersionedTransaction,
+} from "@solana/web3.js";
 import { useSnackbar } from "./snackbarContext";
 import { useConnectUser } from "@/hooks/api-hooks/useUsers";
 import { useAuth } from "./authContext";
 import nacl from "tweetnacl";
 import naclUtil from "tweetnacl-util";
 import { Web3AuthContextProps, Web3AuthProviderProps } from "./interfaces";
+import { hexToUint8Array } from "@/utils/helper";
 
 const clientId = process.env.NEXT_PUBLIC_CLIENT_ID;
 
@@ -138,10 +141,11 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
   };
 
   //Assuming user is already logged in.
-  const getPrivateKey = async () => {
+  const getPrivateKey = async (): Promise<string> => {
     const privateKey = await web3auth.provider.request({
       method: "solanaPrivateKey",
     });
+    return typeof privateKey == "string" ? privateKey : "";
   };
 
   const getBalance = async () => {
@@ -166,47 +170,28 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
       const solanaWallet = new SolanaWallet(provider);
 
       // Request the connected wallet accounts
-      const accounts = await solanaWallet.requestAccounts();
       const connection = new Connection(chainConfig.rpcTarget);
 
       // Deserialize the transaction received from the backend
-      const transaction = Transaction.from(
-        Buffer.from(serializedTransaction, "base64")
+      const transaction = VersionedTransaction.deserialize(
+        new Uint8Array(Buffer.from(serializedTransaction, "base64"))
       );
-
-      // Ensure that the fee payer is the user's wallet (for safety)
-      const senderPublicKey = new PublicKey(accounts[0]);
-      transaction.feePayer = senderPublicKey;
 
       // Sign the transaction with the user's wallet
       const signedTx = await solanaWallet.signTransaction(transaction);
 
-      // Serialize the signed transaction
+      // // Serialize the signed transaction
       const serializedSignedTx = signedTx.serialize();
-      const encodedSerializedSignedTx = serializedSignedTx.toString("base64");
-
-      // Send the serialized signed transaction to the Solana network
-      const signature = await connection.sendRawTransaction(
-        serializedSignedTx,
-        {
-          skipPreflight: false,
-        }
-      );
-
-      // Confirm the transaction
-      const confirmation = await connection.confirmTransaction(
-        signature,
-        "confirmed"
-      );
-
-      if (confirmation.value.err) {
-        throw new Error();
-      }
+      const encodedSerializedSignedTx =
+        Buffer.from(serializedSignedTx).toString("base64");
 
       return {
-        data: { encodedSerializedSignedTx, signature, serializedSignedTx },
+        data: {
+          encodedSerializedSignedTx,
+          serializedSignedTx,
+        },
         success: true,
-        message: "Transaction Successfully executed!",
+        message: "Transaction Successfully signed!",
       };
     } catch (error) {
       console.log("error: ", error);

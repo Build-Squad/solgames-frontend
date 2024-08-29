@@ -1,6 +1,7 @@
 import EscrowServices from "@/api-services/EscrowServices";
 import {
   CreateAndDepositEscrowRequest,
+  DepositAcceptTransactionRequest,
   ExecuteEscrowRequest,
 } from "@/api-services/interfaces/escrowInterface";
 import { useMutation } from "@tanstack/react-query";
@@ -19,6 +20,22 @@ export const useCreateEscrow = () => {
     isCreateEscrowLoading,
     createEscrowResponse,
     createEscrowMutateAsync,
+  };
+};
+
+export const useDepositAcceptTransaction = () => {
+  const {
+    isPending: isDepositAcceptGameLoading,
+    data: depositAcceptGameResponse,
+    mutateAsync: depositAcceptGameMutateAsync,
+  } = useMutation({
+    mutationFn: (payload: DepositAcceptTransactionRequest) => EscrowServices.depositAcceptTransaction(payload),
+  });
+
+  return {
+    isDepositAcceptGameLoading,
+    depositAcceptGameResponse,
+    depositAcceptGameMutateAsync,
   };
 };
 

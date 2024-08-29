@@ -40,6 +40,13 @@ export interface Asset {
   logoUri: string;
 }
 
+// Deposit accept transaction
+
+export interface DepositAcceptTransactionRequest {
+  inviteCode: string;
+  publicKey: string;
+}
+
 // Execute escrow
 
 export interface ExecuteEscrowRequest {

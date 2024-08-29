@@ -128,7 +128,7 @@ const SignTransactionModal = ({
     userRole: "Creator" | "Acceptor"
   ) => {
     try {
-      const exeRes = await executeEscrowMutateAsync({
+      return await executeEscrowMutateAsync({
         signedTransaction: signedTransaction,
         transactionId: escrowData?.depositSerializedTransaction?.transactionId,
         vaultId: escrowData?.escrowDetails?.vaultId,
@@ -136,13 +136,9 @@ const SignTransactionModal = ({
         userId: user?.id,
         userRole,
       });
-      if (!exeRes.success) {
-        showMessage(exeRes.message, "error");
-      }
-      return true;
     } catch (e) {
       showMessage("Error while execute escrow", "error");
-      return false;
+      return null;
     }
   };
 
@@ -161,18 +157,19 @@ const SignTransactionModal = ({
       );
     }
     if (tx.success) {
-      const executeSuccessfully = await executeEscrowTransaction(
+      const res = await executeEscrowTransaction(
         tx?.data?.encodedSerializedSignedTx,
         "Creator"
       );
 
-      if (executeSuccessfully) {
+      if (res?.success) {
         createGame();
         setTransactionApproved(true);
-        showMessage(tx.message);
+        showMessage(res.message);
+        handleClose();
+      } else {
+        showMessage(res?.message, "error");
       }
-
-      handleClose();
     } else {
       showMessage(tx.message, "error");
     }
@@ -193,12 +190,12 @@ const SignTransactionModal = ({
       );
     }
     if (tx.success) {
-      const executeSuccessfully = await executeEscrowTransaction(
+      const res = await executeEscrowTransaction(
         tx?.data?.encodedSerializedSignedTx,
         "Acceptor"
       );
 
-      if (executeSuccessfully) {
+      if (res.success) {
         // 5.2)
         // After all the funds are transferred successfully, accept the game with the
         // game details and acceptor details
@@ -207,10 +204,12 @@ const SignTransactionModal = ({
           joiningCode: inviteCode,
         });
         setTransactionApproved(true);
-        showMessage(tx.message);
+        showMessage(res.message);
         router.push("/my-games");
+        handleClose();
+      } else {
+        showMessage(res?.message, "error");
       }
-      handleClose();
     } else {
       showMessage(tx.message, "error");
     }

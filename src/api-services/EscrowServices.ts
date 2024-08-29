@@ -4,6 +4,7 @@ import {
   CreateAndDepositEscrowRequest,
   ExecuteEscrowRequest,
   ExecuteEscrowResponse,
+  DepositAcceptTransactionRequest,
 } from "./interfaces/escrowInterface";
 
 class EscrowServices {
@@ -12,6 +13,9 @@ class EscrowServices {
       `/escrow/create-escrow`,
       payload
     );
+  };
+  depositAcceptTransaction = async (payload: DepositAcceptTransactionRequest) => {
+    return CoreAPIService.post<any>(`/escrow/deposit-accept-transaction`, payload);
   };
   executeEscrow = async (payload: ExecuteEscrowRequest) => {
     return CoreAPIService.post<ExecuteEscrowResponse>(

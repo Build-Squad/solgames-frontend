@@ -4,7 +4,7 @@ import NoDataFound from "@/components/noDataFound";
 import { useAuth } from "@/context/authContext";
 import { useSnackbar } from "@/context/snackbarContext";
 import { useWeb3Auth } from "@/context/web3AuthProvider";
-import { useAcceptAndInitializeEscrow } from "@/hooks/api-hooks/useEscrow";
+import { useDepositAcceptTransaction } from "@/hooks/api-hooks/useEscrow";
 import { useGetGameWithInviteCode } from "@/hooks/api-hooks/useGames";
 import { STATUS_COLORS } from "@/utils/constants";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -24,8 +24,8 @@ export default function JoinGame({}: Props) {
   const { data: gameData, refetch: refetchGameData } =
     useGetGameWithInviteCode(joiningCode);
 
-  const { acceptEscrowMutateAsync, acceptEscrowResponse } =
-    useAcceptAndInitializeEscrow();
+  const { depositAcceptGameResponse, depositAcceptGameMutateAsync } =
+    useDepositAcceptTransaction();
 
   useEffect(() => {
     if (
@@ -47,7 +47,7 @@ export default function JoinGame({}: Props) {
 
   const initializeAcceptGame = async () => {
     try {
-      const res = await acceptEscrowMutateAsync({
+      const res = await depositAcceptGameMutateAsync({
         publicKey: user?.publicKey,
         inviteCode: joiningCode,
       });
@@ -79,7 +79,7 @@ export default function JoinGame({}: Props) {
       type={"ACCEPT"}
       betAmount={gameData.data.betAmount}
       inviteCode={joiningCode}
-      escrowData={acceptEscrowResponse?.data}
+      escrowData={depositAcceptGameResponse?.data}
     />
   );
 }
