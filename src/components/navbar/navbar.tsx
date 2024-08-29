@@ -21,6 +21,8 @@ import { useEffect, useState } from "react";
 import ConnectModal from "../modals/connectModal";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useSnackbar } from "@/context/snackbarContext";
+import { Avatar, Menu, MenuItem } from "@mui/material";
+import { getRandomColor } from "@/utils/helper";
 
 const drawerWidth = 240;
 const navLoggedInItems = [
@@ -35,6 +37,7 @@ const navLoggedOutItems = [
   { text: "Watch", route: "/watch" },
   { text: "Community", route: "/community" },
 ];
+const profileBackgroundColor = getRandomColor();
 
 const DrawerAppBar = () => {
   const router = useRouter();
@@ -45,6 +48,20 @@ const DrawerAppBar = () => {
   const { logout: logoutUser } = useAuth();
   const { user } = useAuth();
   const { showMessage } = useSnackbar();
+
+  const [anchorEl, setAnchorEl] = useState(null);
+  const handleClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleProfileClick = () => {
+    router.push("/my-games");
+    handleClose();
+  };
 
   useEffect(() => {
     if (user?.id) {
@@ -169,19 +186,61 @@ const DrawerAppBar = () => {
                 >
                   Profile
                 </Button>
-                <Button
-                  variant="outlined"
+                <Avatar
+                  onClick={handleClick}
                   sx={{
-                    color: "#fff",
-                    borderRadius: "20px",
-                    border: "1px solid white",
-                    px: 4,
-                    fontWeight: "bold",
+                    bgcolor: profileBackgroundColor,
+                    cursor: "pointer",
+                    padding: "20px",
                   }}
-                  onClick={handleLogout}
                 >
-                  Logout
-                </Button>
+                  {user?.publicKey.slice(0, 2)}
+                </Avatar>
+                <Menu
+                  anchorEl={anchorEl}
+                  open={Boolean(anchorEl)}
+                  onClose={handleClose}
+                  anchorOrigin={{
+                    vertical: "bottom",
+                    horizontal: "right",
+                  }}
+                  transformOrigin={{
+                    vertical: "top",
+                    horizontal: "right",
+                  }}
+                  PaperProps={{
+                    sx: {
+                      mt: 1,
+                      minWidth: 200,
+                      bgcolor: "#f9f9f9",
+                      color: "#333",
+                      borderRadius: "10px",
+                      boxShadow: "0px 4px 12px rgba(0, 0, 0, 0.1)",
+                    },
+                  }}
+                >
+                  <MenuItem>
+                    <Typography
+                      fontWeight={"bold"}
+                      sx={{ wordBreak: "break-all" }}
+                    >
+                      {user?.publicKey
+                        ? `${user?.publicKey.slice(
+                            0,
+                            4
+                          )}.......${user?.publicKey.slice(-4)}`
+                        : null}
+                    </Typography>
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() => {
+                      handleLogout();
+                      handleClose();
+                    }}
+                  >
+                    Logout
+                  </MenuItem>
+                </Menu>
               </>
             ) : (
               <>

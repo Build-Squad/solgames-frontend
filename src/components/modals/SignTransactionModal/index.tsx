@@ -16,7 +16,12 @@ import { useWeb3Auth } from "@/context/web3AuthProvider";
 import { useRouter } from "next/navigation";
 import { useExecuteEscrow } from "@/hooks/api-hooks/useEscrow";
 import { CreateAndDepositEscrowResponse } from "@/api-services/interfaces/escrowInterface";
-import { clusterApiUrl, Connection, Transaction } from "@solana/web3.js";
+import {
+  clusterApiUrl,
+  Connection,
+  Transaction,
+  VersionedTransaction,
+} from "@solana/web3.js";
 import { useWallet } from "@solana/wallet-adapter-react";
 
 const style = {
@@ -78,32 +83,15 @@ const SignTransactionModal = ({
         };
       }
       const connection = new Connection(clusterApiUrl("devnet"));
-      const transaction = Transaction.from(
-        Buffer.from(serializedTransaction, "base64")
+      const transaction = VersionedTransaction.deserialize(
+        new Uint8Array(Buffer.from(serializedTransaction, "base64"))
       );
       const signedTransaction = await signTransaction(transaction);
 
       // Serialize the signed transaction
       const serializedSignedTx = signedTransaction.serialize();
-      const encodedSerializedSignedTx = serializedSignedTx.toString("base64");
-
-      // Send the serialized signed transaction to the Solana network
-      const signature = await connection.sendRawTransaction(
-        serializedSignedTx,
-        {
-          skipPreflight: false,
-        }
-      );
-
-      // Confirm the transaction
-      const confirmation = await connection.confirmTransaction(
-        signature,
-        "confirmed"
-      );
-
-      if (confirmation.value.err) {
-        throw new Error();
-      }
+      const encodedSerializedSignedTx =
+        Buffer.from(serializedSignedTx).toString("base64");
 
       return {
         data: { encodedSerializedSignedTx },
