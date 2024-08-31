@@ -82,7 +82,6 @@ const SignTransactionModal = ({
           message: "Account not connected!",
         };
       }
-      const connection = new Connection(clusterApiUrl("devnet"));
       const transaction = VersionedTransaction.deserialize(
         new Uint8Array(Buffer.from(serializedTransaction, "base64"))
       );
