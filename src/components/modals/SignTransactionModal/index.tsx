@@ -16,13 +16,9 @@ import { useWeb3Auth } from "@/context/web3AuthProvider";
 import { useRouter } from "next/navigation";
 import { useExecuteEscrow } from "@/hooks/api-hooks/useEscrow";
 import { CreateAndDepositEscrowResponse } from "@/api-services/interfaces/escrowInterface";
-import {
-  clusterApiUrl,
-  Connection,
-  Transaction,
-  VersionedTransaction,
-} from "@solana/web3.js";
+import { VersionedTransaction } from "@solana/web3.js";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { useConnectUser } from "@/hooks/api-hooks/useUsers";
 
 const style = {
   position: "absolute",
@@ -59,10 +55,11 @@ const SignTransactionModal = ({
   const router = useRouter();
   const [transactionApproved, setTransactionApproved] = useState(false);
   const { showMessage } = useSnackbar();
-  const { user } = useAuth();
+  const { user, login: loginUser } = useAuth();
   const { acceptGameMutateAsync } = useAcceptGame();
   const { transfer } = useWeb3Auth();
   const { executeEscrowMutateAsync } = useExecuteEscrow();
+  const { connectionMutateAsync } = useConnectUser();
 
   const { publicKey, signTransaction } = useWallet();
 
@@ -192,6 +189,13 @@ const SignTransactionModal = ({
         });
         setTransactionApproved(true);
         showMessage(res.message);
+
+        // Here we need to recall the login so as to update the user in the useAuth
+        const connectedUser = await connectionMutateAsync({ publicKey });
+        if (connectedUser?.data?.id) {
+          loginUser(connectedUser.data);
+        }
+
         router.push("/my-games");
         handleClose();
       } else {
