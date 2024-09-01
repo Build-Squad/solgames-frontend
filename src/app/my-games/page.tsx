@@ -1,21 +1,22 @@
 "use client";
 import { useAuth } from "@/context/authContext";
 import { useGetAllGames } from "@/hooks/api-hooks/useGames";
-import {
-  Box,
-  Menu,
-  MenuItem,
-  IconButton,
-  Chip,
-  Tabs,
-  Tab,
-} from "@mui/material";
+import { Chip, Tabs, Tab, Tooltip, Box } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
-import React, { EventHandler, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import GameDetailsModal from "@/components/modals/gameDetailsModal";
-import { STATUS_COLORS } from "@/utils/constants";
-import { CheckCircle, Cancel, ContentCopy } from "@mui/icons-material";
+import { CLAIM_ALERTS, STATUS_COLORS } from "@/utils/constants";
+import {
+  CheckCircle,
+  Cancel,
+  ContentCopy,
+  Close,
+  MonetizationOn,
+  HourglassEmpty,
+  EventBusy,
+  Remove,
+  RemoveCircleOutline,
+} from "@mui/icons-material";
 import { useSnackbar } from "@/context/snackbarContext";
 
 const renderIsGameAccepted = (params) => {
@@ -41,49 +42,111 @@ const renderIsGameAccepted = (params) => {
   );
 };
 
+const ClaimsComponent = ({
+  winnerId,
+  gameStatus,
+}: {
+  winnerId?: string;
+  gameStatus: string;
+}) => {
+  const { showMessage } = useSnackbar();
+  const { user } = useAuth();
+
+  const handleOnClick = (
+    e: React.MouseEvent<SVGSVGElement, MouseEvent>,
+    type: "WON" | "LOST" | "PENDING" | "EXPIRED" | "DRAW"
+  ) => {
+    e.stopPropagation();
+
+    // Handle notifications with no withdrawl
+    if (type == "LOST") {
+      showMessage(CLAIM_ALERTS.LOST, "info");
+    }
+    if (type == "PENDING") {
+      showMessage(CLAIM_ALERTS.PENDING, "info");
+    }
+
+    // Handle withdrawls
+    if (type == "WON") {
+      // Handle withdrawl funds to the winner account
+    } else if (type == "EXPIRED") {
+      // Handle withdrawl funds to the creator's account
+    } else if (type == "DRAW") {
+      // Handle withdrawl funds to both the accounts
+    }
+  };
+
+  const gameNotCompletedStatusArr = [
+    STATUS_COLORS.Accepted.value,
+    STATUS_COLORS.Scheduled.value,
+    STATUS_COLORS.InProgress.value,
+  ];
+
+  return (
+    <Box sx={{ mt: 1 }}>
+      {/* The game has a winner */}
+      {winnerId == user?.id && (
+        <Tooltip title="Claim Funds">
+          <MonetizationOn
+            sx={{ cursor: "pointer", color: "#4CAF50" }}
+            onClick={(e) => {
+              handleOnClick(e, "WON");
+            }}
+          />
+        </Tooltip>
+      )}
+      {/* The game has a winner but not the current user */}
+      {winnerId && winnerId != user?.id && (
+        <Tooltip title="You've lost the game.">
+          <Close
+            sx={{ color: "#D32F2F" }}
+            onClick={(e) => {
+              handleOnClick(e, "LOST");
+            }}
+          />
+        </Tooltip>
+      )}
+      {/* The game is pending */}
+      {gameNotCompletedStatusArr.includes(gameStatus) && (
+        <Tooltip title="Decision Pending">
+          <HourglassEmpty
+            sx={{ color: "#FFA000" }}
+            onClick={(e) => {
+              handleOnClick(e, "PENDING");
+            }}
+          />
+        </Tooltip>
+      )}
+      {/* Game is expired due to no acceptor before the game starts.*/}
+      {gameStatus === STATUS_COLORS.Expired.value && (
+        <Tooltip title="Expired Game">
+          <EventBusy
+            sx={{ color: "#616161" }}
+            onClick={(e) => {
+              handleOnClick(e, "EXPIRED");
+            }}
+          />
+        </Tooltip>
+      )}
+      {/* Game is draw*/}
+      {gameStatus === STATUS_COLORS.Draw.value && (
+        <Tooltip title="Game Draw">
+          <RemoveCircleOutline
+            sx={{ color: "#FFC107" }}
+            onClick={(e) => {
+              handleOnClick(e, "DRAW");
+            }}
+          />
+        </Tooltip>
+      )}
+    </Box>
+  );
+};
+
 const renderGameStatus = (params) => {
   const value = params.value;
   const chipStyle = STATUS_COLORS[value];
   return <Chip color="success" label={value} sx={{ ...chipStyle }} />;
-};
-
-const DropdownMenu = ({ options }) => {
-  const [anchorEl, setAnchorEl] = useState(null);
-  const open = Boolean(anchorEl);
-
-  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation();
-    setAnchorEl(e.currentTarget);
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-
-  return (
-    <div>
-      <IconButton
-        aria-controls={open ? "action-menu" : undefined}
-        aria-haspopup="true"
-        onClick={handleClick}
-      >
-        <MoreVertIcon />
-      </IconButton>
-      <Menu
-        id="action-menu"
-        anchorEl={anchorEl}
-        open={open}
-        onClose={handleClose}
-        MenuListProps={{ "aria-labelledby": "action-menu" }}
-      >
-        {options.map((option) => (
-          <MenuItem key={option} onClick={handleClose}>
-            {option}
-          </MenuItem>
-        ))}
-      </Menu>
-    </div>
-  );
 };
 
 const MyGames = () => {
@@ -272,12 +335,15 @@ const MyGames = () => {
                 cellClassName: "center-align",
               },
               {
-                field: "actions",
-                headerName: "Actions",
+                field: "claims",
+                headerName: "Claims",
                 flex: 1,
                 headerAlign: "center",
                 renderCell: (params) => (
-                  <DropdownMenu options={["View Details", "Edit", "Delete"]} />
+                  <ClaimsComponent
+                    winnerId={params?.row?.winnerId}
+                    gameStatus={params?.row?.gameStatus}
+                  />
                 ),
                 cellClassName: "center-align",
               },
