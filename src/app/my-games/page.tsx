@@ -10,12 +10,10 @@ import {
   CheckCircle,
   Cancel,
   ContentCopy,
-  Close,
   MonetizationOn,
   HourglassEmpty,
   EventBusy,
-  Remove,
-  RemoveCircleOutline,
+  EmojiFlags,
 } from "@mui/icons-material";
 import { useSnackbar } from "@/context/snackbarContext";
 
@@ -98,8 +96,8 @@ const ClaimsComponent = ({
       {/* The game has a winner but not the current user */}
       {winnerId && winnerId != user?.id && (
         <Tooltip title="You've lost the game.">
-          <Close
-            sx={{ color: "#D32F2F" }}
+          <Cancel
+            sx={{ color: "#E53935" }} // Bright Red for Lost Game
             onClick={(e) => {
               handleOnClick(e, "LOST");
             }}
@@ -121,7 +119,7 @@ const ClaimsComponent = ({
       {gameStatus === STATUS_COLORS.Expired.value && (
         <Tooltip title="Expired Game">
           <EventBusy
-            sx={{ color: "#616161" }}
+            sx={{ color: "#E53935" }}
             onClick={(e) => {
               handleOnClick(e, "EXPIRED");
             }}
@@ -131,8 +129,8 @@ const ClaimsComponent = ({
       {/* Game is draw*/}
       {gameStatus === STATUS_COLORS.Draw.value && (
         <Tooltip title="Game Draw">
-          <RemoveCircleOutline
-            sx={{ color: "#FFC107" }}
+          <EmojiFlags
+            sx={{ color: "#42A5F5" }}
             onClick={(e) => {
               handleOnClick(e, "DRAW");
             }}

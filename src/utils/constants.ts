@@ -10,5 +10,5 @@ export const STATUS_COLORS = {
 export const CLAIM_ALERTS = {
   LOST: "You've lost the game, create a new game and start betting your tokens",
   PENDING:
-    "The game is not started or is in progress Game decision is pending.",
+    "Game decision is pending. Game not started or is in progress.",
 };
