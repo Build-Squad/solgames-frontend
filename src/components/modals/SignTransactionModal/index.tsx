@@ -163,6 +163,7 @@ const SignTransactionModal = ({
   // 3.2)
   // Transfer the funds by signing the transaction as an acceptor
   const handleAcceptGame = async () => {
+    setIsLoading(true);
     let tx;
     if (user?.verifier == "wallet") {
       tx = await signTransactionWithSolanaWallet(
@@ -204,6 +205,7 @@ const SignTransactionModal = ({
     } else {
       showMessage(tx.message, "error");
     }
+    setIsLoading(false);
   };
 
   // 2)
