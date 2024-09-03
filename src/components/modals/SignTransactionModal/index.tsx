@@ -19,6 +19,7 @@ import { CreateAndDepositEscrowResponse } from "@/api-services/interfaces/escrow
 import { VersionedTransaction } from "@solana/web3.js";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useConnectUser } from "@/hooks/api-hooks/useUsers";
+import { signTransactionWithSolanaWallet } from "@/utils/helper";
 
 const style = {
   position: "absolute",
@@ -63,47 +64,6 @@ const SignTransactionModal = ({
 
   const { publicKey, signTransaction } = useWallet();
 
-  // For Solana wallets
-  const signTransactionWithSolanaWallet = async (
-    serializedTransaction: string
-  ) => {
-    try {
-      if (!publicKey || !signTransaction) {
-        showMessage(
-          "Wallet not connected or no signing capability available.",
-          "info"
-        );
-        return {
-          data: null,
-          success: false,
-          message: "Account not connected!",
-        };
-      }
-      const transaction = VersionedTransaction.deserialize(
-        new Uint8Array(Buffer.from(serializedTransaction, "base64"))
-      );
-      const signedTransaction = await signTransaction(transaction);
-
-      // Serialize the signed transaction
-      const serializedSignedTx = signedTransaction.serialize();
-      const encodedSerializedSignedTx =
-        Buffer.from(serializedSignedTx).toString("base64");
-
-      return {
-        data: { encodedSerializedSignedTx },
-        success: true,
-        message: "Transaction Successfully executed!",
-      };
-    } catch (error) {
-      console.error("Error signing the transaction: ", error);
-      return {
-        data: null,
-        success: false,
-        message: "Transfer failed!",
-      };
-    }
-  };
-
   // 4)
   // After the funds are transferred, execute the transaction
   // and store the transaction details in the DB
@@ -133,7 +93,10 @@ const SignTransactionModal = ({
     let tx;
     if (user?.verifier == "wallet") {
       tx = await signTransactionWithSolanaWallet(
-        escrowData?.depositSerializedTransaction?.serializedTransaction
+        escrowData?.depositSerializedTransaction?.serializedTransaction,
+        signTransaction,
+        publicKey,
+        showMessage
       );
     } else {
       tx = await transfer(
@@ -167,7 +130,10 @@ const SignTransactionModal = ({
     let tx;
     if (user?.verifier == "wallet") {
       tx = await signTransactionWithSolanaWallet(
-        escrowData?.depositSerializedTransaction?.serializedTransaction
+        escrowData?.depositSerializedTransaction?.serializedTransaction,
+        signTransaction,
+        publicKey,
+        showMessage
       );
     } else {
       tx = await transfer(

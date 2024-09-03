@@ -45,6 +45,11 @@ const JoinGameNotificationComponent: React.FC = () => {
     const now = new Date();
 
     userGames?.forEach((game: Game) => {
+      if (
+        game.gameStatus !== STATUS_COLORS.Accepted.value &&
+        game.gameStatus !== STATUS_COLORS.Scheduled.value
+      )
+        return;
       const startTime = new Date(game.gameDateTime);
       const diff = now.getTime() - startTime.getTime();
 

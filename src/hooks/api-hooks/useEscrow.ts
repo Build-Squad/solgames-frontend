@@ -3,6 +3,8 @@ import {
   CreateAndDepositEscrowRequest,
   DepositAcceptTransactionRequest,
   ExecuteEscrowRequest,
+  ExecuteWithdrawalEscrowRequest,
+  WithdrawalTransactionRequest,
 } from "@/api-services/interfaces/escrowInterface";
 import { useMutation } from "@tanstack/react-query";
 
@@ -29,7 +31,8 @@ export const useDepositAcceptTransaction = () => {
     data: depositAcceptGameResponse,
     mutateAsync: depositAcceptGameMutateAsync,
   } = useMutation({
-    mutationFn: (payload: DepositAcceptTransactionRequest) => EscrowServices.depositAcceptTransaction(payload),
+    mutationFn: (payload: DepositAcceptTransactionRequest) =>
+      EscrowServices.depositAcceptTransaction(payload),
   });
 
   return {
@@ -53,5 +56,40 @@ export const useExecuteEscrow = () => {
     isExecuteEscrowLoading,
     executeEscrowResponse,
     executeEscrowMutateAsync,
+  };
+};
+
+export const useWithdrawalTransaction = () => {
+  const {
+    isPending: isWithdrawalTransactionLoading,
+    data: withdrawalTransactionResponse,
+    mutateAsync: withdrawalTransactionMutateAsync,
+  } = useMutation({
+    mutationFn: (payload: WithdrawalTransactionRequest) =>
+      EscrowServices.withdrawlTransaction(payload),
+  });
+
+  return {
+    isWithdrawalTransactionLoading,
+    withdrawalTransactionResponse,
+    withdrawalTransactionMutateAsync,
+  };
+};
+
+
+export const useExecuteWithdrawalTransaction = () => {
+  const {
+    isPending: isExecuteWithdrawalTransactionLoading,
+    data: executeWithdrawalTransactionResponse,
+    mutateAsync: executeWithdrawalTransactionMutateAsync,
+  } = useMutation({
+    mutationFn: (payload: ExecuteWithdrawalEscrowRequest) =>
+      EscrowServices.executeWithdrawal(payload),
+  });
+
+  return {
+    isExecuteWithdrawalTransactionLoading,
+    executeWithdrawalTransactionResponse,
+    executeWithdrawalTransactionMutateAsync,
   };
 };

@@ -5,6 +5,8 @@ import {
   ExecuteEscrowRequest,
   ExecuteEscrowResponse,
   DepositAcceptTransactionRequest,
+  WithdrawalTransactionRequest,
+  ExecuteWithdrawalEscrowRequest,
 } from "./interfaces/escrowInterface";
 
 class EscrowServices {
@@ -14,12 +16,26 @@ class EscrowServices {
       payload
     );
   };
-  depositAcceptTransaction = async (payload: DepositAcceptTransactionRequest) => {
-    return CoreAPIService.post<any>(`/escrow/deposit-accept-transaction`, payload);
+  depositAcceptTransaction = async (
+    payload: DepositAcceptTransactionRequest
+  ) => {
+    return CoreAPIService.post<any>(
+      `/escrow/deposit-accept-transaction`,
+      payload
+    );
   };
   executeEscrow = async (payload: ExecuteEscrowRequest) => {
     return CoreAPIService.post<ExecuteEscrowResponse>(
       `/escrow/execute-deposit`,
+      payload
+    );
+  };
+  withdrawlTransaction = async (payload: WithdrawalTransactionRequest) => {
+    return CoreAPIService.post<any>(`/escrow/withdrawal-transaction`, payload);
+  };
+  executeWithdrawal = async (payload: ExecuteWithdrawalEscrowRequest) => {
+    return CoreAPIService.post<any>(
+      `/escrow/execute-withdrawal`,
       payload
     );
   };

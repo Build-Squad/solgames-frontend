@@ -16,6 +16,8 @@ import {
   EmojiFlags,
 } from "@mui/icons-material";
 import { useSnackbar } from "@/context/snackbarContext";
+import { useWithdrawalTransaction } from "@/hooks/api-hooks/useEscrow";
+import ClaimsComponent from "@/components/claimComponent";
 
 const renderIsGameAccepted = (params) => {
   return (
@@ -35,107 +37,6 @@ const renderIsGameAccepted = (params) => {
         />
       ) : (
         <Cancel sx={{ color: "#F44336" }} />
-      )}
-    </Box>
-  );
-};
-
-const ClaimsComponent = ({
-  winnerId,
-  gameStatus,
-}: {
-  winnerId?: string;
-  gameStatus: string;
-}) => {
-  const { showMessage } = useSnackbar();
-  const { user } = useAuth();
-
-  const handleOnClick = (
-    e: React.MouseEvent<SVGSVGElement, MouseEvent>,
-    type: "WON" | "LOST" | "PENDING" | "EXPIRED" | "DRAW"
-  ) => {
-    e.stopPropagation();
-
-    // Handle notifications with no withdrawl
-    if (type == "LOST") {
-      showMessage(CLAIM_ALERTS.LOST, "info");
-    }
-    if (type == "PENDING") {
-      showMessage(CLAIM_ALERTS.PENDING, "info");
-    }
-
-    // Handle withdrawls
-    if (type == "WON") {
-      // Handle withdrawl funds to the winner account
-    } else if (type == "EXPIRED") {
-      // Handle withdrawl funds to the creator's account
-    } else if (type == "DRAW") {
-      // Handle withdrawl funds to both the accounts
-    }
-  };
-
-  const gameNotCompletedStatusArr = [
-    STATUS_COLORS.Accepted.value,
-    STATUS_COLORS.Scheduled.value,
-    STATUS_COLORS.InProgress.value,
-  ];
-
-  return (
-    <Box sx={{ mt: 1 }}>
-      {/* The game has a winner */}
-      {winnerId == user?.id && (
-        <Tooltip title="Claim Funds">
-          <MonetizationOn
-            sx={{ cursor: "pointer", color: "#4CAF50" }}
-            onClick={(e) => {
-              handleOnClick(e, "WON");
-            }}
-          />
-        </Tooltip>
-      )}
-      {/* The game has a winner but not the current user */}
-      {winnerId && winnerId != user?.id && (
-        <Tooltip title="You've lost the game.">
-          <Cancel
-            sx={{ color: "#E53935" }} // Bright Red for Lost Game
-            onClick={(e) => {
-              handleOnClick(e, "LOST");
-            }}
-          />
-        </Tooltip>
-      )}
-      {/* The game is pending */}
-      {gameNotCompletedStatusArr.includes(gameStatus) && (
-        <Tooltip title="Decision Pending">
-          <HourglassEmpty
-            sx={{ color: "#FFA000" }}
-            onClick={(e) => {
-              handleOnClick(e, "PENDING");
-            }}
-          />
-        </Tooltip>
-      )}
-      {/* Game is expired due to no acceptor before the game starts.*/}
-      {gameStatus === STATUS_COLORS.Expired.value && (
-        <Tooltip title="Expired Game">
-          <EventBusy
-            sx={{ color: "#E53935" }}
-            onClick={(e) => {
-              handleOnClick(e, "EXPIRED");
-            }}
-          />
-        </Tooltip>
-      )}
-      {/* Game is draw*/}
-      {gameStatus === STATUS_COLORS.Draw.value && (
-        <Tooltip title="Game Draw">
-          <EmojiFlags
-            sx={{ color: "#42A5F5" }}
-            onClick={(e) => {
-              handleOnClick(e, "DRAW");
-            }}
-          />
-        </Tooltip>
       )}
     </Box>
   );
@@ -337,12 +238,16 @@ const MyGames = () => {
                 headerName: "Claims",
                 flex: 1,
                 headerAlign: "center",
-                renderCell: (params) => (
-                  <ClaimsComponent
-                    winnerId={params?.row?.winnerId}
-                    gameStatus={params?.row?.gameStatus}
-                  />
-                ),
+                renderCell: (params) => {
+                  console.log("params.row ==== , ", params.row);
+                  return (
+                    <ClaimsComponent
+                      inviteCode={params?.row?.inviteCode}
+                      winnerId={params?.row?.winnerId}
+                      gameStatus={params?.row?.gameStatus}
+                    />
+                  );
+                },
                 cellClassName: "center-align",
               },
             ]}
