@@ -239,7 +239,6 @@ const MyGames = () => {
                 flex: 1,
                 headerAlign: "center",
                 renderCell: (params) => {
-                  console.log("params.row ==== , ", params.row);
                   return (
                     <ClaimsComponent
                       inviteCode={params?.row?.inviteCode}

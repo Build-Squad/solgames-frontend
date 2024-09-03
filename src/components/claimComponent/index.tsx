@@ -4,6 +4,7 @@ import { useSnackbar } from "@/context/snackbarContext";
 import { useWeb3Auth } from "@/context/web3AuthProvider";
 import {
   useExecuteWithdrawalTransaction,
+  useGetEscrowDetails,
   useWithdrawalTransaction,
 } from "@/hooks/api-hooks/useEscrow";
 import { CLAIM_ALERTS, STATUS_COLORS } from "@/utils/constants";
@@ -16,7 +17,8 @@ import {
   MonetizationOn,
 } from "@mui/icons-material";
 import { Box, Tooltip } from "@mui/material";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useState } from "react";
+import SignTransactionModal from "../modals/SignTransactionModal";
 
 const ClaimsComponent = ({
   winnerId,
@@ -27,69 +29,14 @@ const ClaimsComponent = ({
   gameStatus: string;
   inviteCode: string;
 }) => {
-  const {
-    isWithdrawalTransactionLoading,
-    withdrawalTransactionResponse,
-    withdrawalTransactionMutateAsync,
-  } = useWithdrawalTransaction();
+  const [withdrawalType, setWithdrawalType] = useState<WithdrawalTypes>();
+  const [showSignTransactionModal, setShowSignTransactionModal] =
+    useState(false);
 
-  const {
-    isExecuteWithdrawalTransactionLoading,
-    executeWithdrawalTransactionResponse,
-    executeWithdrawalTransactionMutateAsync,
-  } = useExecuteWithdrawalTransaction();
   const { showMessage } = useSnackbar();
   const { user } = useAuth();
-
-  const { publicKey, signTransaction } = useWallet();
-  const { transfer } = useWeb3Auth();
-
-  const handleTransaction = async ({ type }: { type: WithdrawalTypes }) => {
-    try {
-      const withdrawalTransaction = await withdrawalTransactionMutateAsync({
-        inviteCode,
-        publicKey: user?.publicKey,
-        type,
-      });
-      if (withdrawalTransaction.success) {
-        let tx;
-        console.log(user?.verifier);
-        if (user?.verifier == "wallet") {
-          tx = await signTransactionWithSolanaWallet(
-            withdrawalTransaction?.data?.serializedTransaction,
-            signTransaction,
-            publicKey,
-            showMessage
-          );
-        } else {
-          tx = await transfer(
-            withdrawalTransaction?.data?.serializedTransaction
-          );
-        }
-        if (tx.success) {
-          const res = await executeWithdrawalTransactionMutateAsync({
-            inviteCode,
-            publicKey: user?.publicKey,
-            signedTransaction: tx.data.encodedSerializedSignedTx,
-            transactionId: withdrawalTransaction?.data?.transactionId,
-            type,
-          });
-
-          if (res.success) {
-            showMessage(res.message, "success");
-          } else {
-            showMessage(res?.message, "error");
-          }
-        } else {
-          showMessage(withdrawalTransaction.message, "error");
-        }
-      }
-    } catch (e) {
-      console.error(e);
-      showMessage("Error initiating withdrawal transaction!", "error");
-    }
-  };
-
+  const { data: escrowData } = useGetEscrowDetails(inviteCode);
+  console.log(escrowData);
   const handleOnClick = async (
     e: React.MouseEvent<SVGSVGElement, MouseEvent>,
     type: "WON" | "LOST" | "PENDING" | "EXPIRED" | "DRAW"
@@ -106,7 +53,8 @@ const ClaimsComponent = ({
 
     // Handle withdrawls
     if (type == "WON" || type == "EXPIRED" || type == "DRAW") {
-      await handleTransaction({ type });
+      setShowSignTransactionModal(true);
+      setWithdrawalType(type);
     }
   };
 
@@ -122,7 +70,15 @@ const ClaimsComponent = ({
       {winnerId == user?.id && (
         <Tooltip title="Claim Funds">
           <MonetizationOn
-            sx={{ cursor: "pointer", color: "#4CAF50" }}
+            sx={{
+              cursor: "pointer",
+              color: "#4CAF50",
+              transition: "transform 0.2s ease, color 0.2s ease",
+              "&:hover": {
+                transform: "scale(1.2)",
+                color: "#388E3C", // Darker Green on hover
+              },
+            }}
             onClick={(e) => {
               handleOnClick(e, "WON");
             }}
@@ -133,7 +89,14 @@ const ClaimsComponent = ({
       {winnerId && winnerId != user?.id && (
         <Tooltip title="You've lost the game.">
           <Cancel
-            sx={{ color: "#E53935" }} // Bright Red for Lost Game
+            sx={{
+              color: "#E53935",
+              transition: "transform 0.2s ease, color 0.2s ease",
+              "&:hover": {
+                transform: "scale(1.2)",
+                color: "#D32F2F", // Darker Red on hover
+              },
+            }}
             onClick={(e) => {
               handleOnClick(e, "LOST");
             }}
@@ -144,7 +107,14 @@ const ClaimsComponent = ({
       {gameNotCompletedStatusArr.includes(gameStatus) && (
         <Tooltip title="Decision Pending">
           <HourglassEmpty
-            sx={{ color: "#FFA000" }}
+            sx={{
+              color: "#FFA000",
+              transition: "transform 0.2s ease, color 0.2s ease",
+              "&:hover": {
+                transform: "scale(1.2)",
+                color: "#FF8F00", // Darker Orange on hover
+              },
+            }}
             onClick={(e) => {
               handleOnClick(e, "PENDING");
             }}
@@ -155,7 +125,14 @@ const ClaimsComponent = ({
       {gameStatus === STATUS_COLORS.Expired.value && (
         <Tooltip title="Expired Game">
           <EventBusy
-            sx={{ color: "#E53935" }}
+            sx={{
+              color: "#E53935",
+              transition: "transform 0.2s ease, color 0.2s ease",
+              "&:hover": {
+                transform: "scale(1.2)",
+                color: "#D32F2F", // Darker Red on hover
+              },
+            }}
             onClick={(e) => {
               handleOnClick(e, "EXPIRED");
             }}
@@ -166,13 +143,34 @@ const ClaimsComponent = ({
       {gameStatus === STATUS_COLORS.Draw.value && (
         <Tooltip title="Game Draw">
           <EmojiFlags
-            sx={{ color: "#42A5F5" }}
+            sx={{
+              color: "#42A5F5",
+              transition: "transform 0.2s ease, color 0.2s ease",
+              "&:hover": {
+                transform: "scale(1.2)",
+                color: "#1E88E5", // Darker Blue on hover
+              },
+            }}
             onClick={(e) => {
               handleOnClick(e, "DRAW");
             }}
           />
         </Tooltip>
       )}
+
+      {showSignTransactionModal ? (
+        <SignTransactionModal
+          open={true}
+          handleClose={() => {
+            setShowSignTransactionModal(false);
+          }}
+          type={"WITHDRAWAL"}
+          withDrawalType={withdrawalType}
+          inviteCode={inviteCode}
+          vaultId={escrowData?.data?.vaultId}
+          withdrawalAmount={escrowData?.data?.amount}
+        />
+      ) : null}
     </Box>
   );
 };

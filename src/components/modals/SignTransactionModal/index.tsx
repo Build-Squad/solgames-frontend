@@ -14,8 +14,15 @@ import { useAuth } from "@/context/authContext";
 import { useAcceptGame } from "@/hooks/api-hooks/useGames";
 import { useWeb3Auth } from "@/context/web3AuthProvider";
 import { useRouter } from "next/navigation";
-import { useExecuteEscrow } from "@/hooks/api-hooks/useEscrow";
-import { CreateAndDepositEscrowResponse } from "@/api-services/interfaces/escrowInterface";
+import {
+  useExecuteEscrow,
+  useExecuteWithdrawalTransaction,
+  useWithdrawalTransaction,
+} from "@/hooks/api-hooks/useEscrow";
+import {
+  CreateAndDepositEscrowResponse,
+  WithdrawalTypes,
+} from "@/api-services/interfaces/escrowInterface";
 import { VersionedTransaction } from "@solana/web3.js";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useConnectUser } from "@/hooks/api-hooks/useUsers";
@@ -36,11 +43,16 @@ interface SignTransactionProps {
   open: boolean;
   handleClose: () => void;
   type?: string;
-  betAmount: string;
+  betAmount?: string;
   createGame?: () => Promise<void>;
   inviteCode: string;
   // Need to change for accept and deposit as well
-  escrowData: CreateAndDepositEscrowResponse["data"];
+  escrowData?: CreateAndDepositEscrowResponse["data"];
+
+  // For withdrawal transaction
+  withDrawalType?: WithdrawalTypes;
+  vaultId?: string;
+  withdrawalAmount?: string;
 }
 
 const SignTransactionModal = ({
@@ -51,18 +63,29 @@ const SignTransactionModal = ({
   createGame,
   inviteCode,
   escrowData,
+
+  // For withdrawal transaction
+  withDrawalType,
+  vaultId,
+  withdrawalAmount,
 }: SignTransactionProps) => {
+  // Component states
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const [transactionApproved, setTransactionApproved] = useState(false);
+
+  // Custom hooks
+  const { withdrawalTransactionMutateAsync } = useWithdrawalTransaction();
+
+  const { executeWithdrawalTransactionMutateAsync } =
+    useExecuteWithdrawalTransaction();
+  const { publicKey, signTransaction } = useWallet();
   const { showMessage } = useSnackbar();
   const { user, login: loginUser } = useAuth();
   const { acceptGameMutateAsync } = useAcceptGame();
   const { transfer } = useWeb3Auth();
   const { executeEscrowMutateAsync } = useExecuteEscrow();
   const { connectionMutateAsync } = useConnectUser();
-
-  const { publicKey, signTransaction } = useWallet();
 
   // 4)
   // After the funds are transferred, execute the transaction
@@ -174,11 +197,67 @@ const SignTransactionModal = ({
     setIsLoading(false);
   };
 
+  const handleWithdrawalTransaction = async ({
+    type,
+  }: {
+    type: WithdrawalTypes;
+  }) => {
+    if (!type) return;
+    setIsLoading(true);
+    try {
+      const withdrawalTransaction = await withdrawalTransactionMutateAsync({
+        inviteCode,
+        publicKey: user?.publicKey,
+        type,
+      });
+      if (withdrawalTransaction.success) {
+        let tx;
+        if (user?.verifier == "wallet") {
+          tx = await signTransactionWithSolanaWallet(
+            withdrawalTransaction?.data?.serializedTransaction,
+            signTransaction,
+            publicKey,
+            showMessage
+          );
+        } else {
+          tx = await transfer(
+            withdrawalTransaction?.data?.serializedTransaction
+          );
+        }
+        if (tx.success) {
+          setTransactionApproved(true);
+          handleClose();
+          const res = await executeWithdrawalTransactionMutateAsync({
+            inviteCode,
+            publicKey: user?.publicKey,
+            signedTransaction: tx.data.encodedSerializedSignedTx,
+            transactionId: withdrawalTransaction?.data?.transactionId,
+            type,
+          });
+
+          if (res.success) {
+            showMessage(res.message, "success");
+          } else {
+            showMessage(res?.message, "error");
+          }
+        } else {
+          showMessage(withdrawalTransaction.message, "error");
+        }
+      }
+    } catch (e) {
+      console.error(e);
+      showMessage("Error initiating withdrawal transaction!", "error");
+    }
+    setIsLoading(false);
+  };
+
   // 2)
-  // While signing we'll see if to call accept or create API
+  // While signing we'll see if to call accept create or withdrawal API
   const handleSign = async () => {
     if (type == "ACCEPT") {
       handleAcceptGame();
+    } else if (type == "WITHDRAWAL") {
+      if (withDrawalType) handleWithdrawalTransaction({ type: withDrawalType });
     } else {
       handleCreateGame();
     }
@@ -204,19 +283,40 @@ const SignTransactionModal = ({
           <b>Token</b> : SOL
         </Typography>
         <Divider sx={{ my: 2 }} />
-        <Typography variant="body2">
-          <b>Sender address</b> : {user?.publicKey}
-        </Typography>
-        <Typography variant="body2" sx={{ mt: 1 }}>
-          <b>Escrow id</b> : {escrowData?.escrowDetails?.vaultId}
-        </Typography>
-        <Divider sx={{ my: 2 }} />
-        <Box display="flex" justifyContent="space-between" mb={1}>
-          <Typography variant="body2" fontWeight={"bold"}>
-            Amount:{" "}
-          </Typography>
-          <Typography variant="body2">{betAmount} SOL</Typography>
-        </Box>
+        {type == "WITHDRAWAL" ? (
+          <>
+            <Typography variant="body2">
+              <b>Escrow address</b> : {vaultId}
+            </Typography>
+            <Typography variant="body2" sx={{ mt: 1 }}>
+              <b>User address: </b> : {user?.publicKey}
+            </Typography>
+            <Divider sx={{ my: 2 }} />
+            <Box display="flex" justifyContent="space-between" mb={1}>
+              <Typography variant="body2" fontWeight={"bold"}>
+                Withdrawal amount:{" "}
+              </Typography>
+              <Typography variant="body2">{withdrawalAmount} SOL</Typography>
+            </Box>
+          </>
+        ) : (
+          <>
+            <Typography variant="body2">
+              <b>Sender address</b> : {user?.publicKey}
+            </Typography>
+            <Typography variant="body2" sx={{ mt: 1 }}>
+              <b>Escrow id</b> : {escrowData?.escrowDetails?.vaultId}
+            </Typography>
+            <Divider sx={{ my: 2 }} />
+            <Box display="flex" justifyContent="space-between" mb={1}>
+              <Typography variant="body2" fontWeight={"bold"}>
+                Amount:{" "}
+              </Typography>
+              <Typography variant="body2">{betAmount} SOL</Typography>
+            </Box>
+          </>
+        )}
+
         <Button
           variant="contained"
           color="primary"

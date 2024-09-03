@@ -10,6 +10,9 @@ import {
 } from "./interfaces/escrowInterface";
 
 class EscrowServices {
+  getEscrow = async (inviteCode: string) => {
+    return CoreAPIService.get<any>(`/escrow/get-escrow/${inviteCode}`);
+  };
   createEscrow = async (payload: CreateAndDepositEscrowRequest) => {
     return CoreAPIService.post<CreateAndDepositEscrowResponse>(
       `/escrow/create-escrow`,
@@ -34,10 +37,7 @@ class EscrowServices {
     return CoreAPIService.post<any>(`/escrow/withdrawal-transaction`, payload);
   };
   executeWithdrawal = async (payload: ExecuteWithdrawalEscrowRequest) => {
-    return CoreAPIService.post<any>(
-      `/escrow/execute-withdrawal`,
-      payload
-    );
+    return CoreAPIService.post<any>(`/escrow/execute-withdrawal`, payload);
   };
 }
 export default new EscrowServices();

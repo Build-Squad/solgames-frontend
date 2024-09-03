@@ -6,7 +6,15 @@ import {
   ExecuteWithdrawalEscrowRequest,
   WithdrawalTransactionRequest,
 } from "@/api-services/interfaces/escrowInterface";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
+
+export const useGetEscrowDetails = (inviteCode: string) => {
+  return useQuery({
+    queryKey: [`game-details-${inviteCode}`],
+    queryFn: () => EscrowServices.getEscrow(inviteCode),
+    enabled: !!inviteCode,
+  });
+};
 
 export const useCreateEscrow = () => {
   const {
@@ -75,7 +83,6 @@ export const useWithdrawalTransaction = () => {
     withdrawalTransactionMutateAsync,
   };
 };
-
 
 export const useExecuteWithdrawalTransaction = () => {
   const {
