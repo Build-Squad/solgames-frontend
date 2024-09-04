@@ -89,27 +89,47 @@ const ClaimsComponent = ({
     }
   };
 
-  const getDisabledValue = () => {
-    
-  }
+  const isDisabled = () => {
+    return (
+      withdrawals?.some((withdrawal) => withdrawal.user.id === user?.id) ??
+      false
+    );
+  };
+
+  const iconStyle = {
+    cursor: isDisabled() ? "not-allowed" : "pointer",
+    transition: "transform 0.2s ease, color 0.2s ease",
+    borderRadius: "50%",
+    padding: "4px",
+    "&:hover": {
+      transform: isDisabled() ? "none" : "scale(1.2)",
+    },
+  };
 
   return (
     <Box sx={{ mt: 1 }}>
       {/* The game has a winner */}
       {winnerId == user?.id && (
-        <Tooltip title="Claim Funds">
+        <Tooltip
+          title={
+            isDisabled() ? "You've already claimed your funds!" : "Claim Funds"
+          }
+        >
           <MonetizationOn
             sx={{
-              cursor: "pointer",
-              color: "#4CAF50",
-              transition: "transform 0.2s ease, color 0.2s ease",
+              ...iconStyle,
+              color: isDisabled() ? "#9E9E9E" : "#4CAF50",
+              backgroundColor: isDisabled() ? "#F5F5F5" : "transparent",
               "&:hover": {
-                transform: "scale(1.2)",
-                color: "#388E3C", // Darker Green on hover
+                ...iconStyle["&:hover"],
+                color: isDisabled() ? "#9E9E9E" : "#388E3C",
+                backgroundColor: isDisabled() ? "#F5F5F5" : "transparent",
               },
             }}
             onClick={(e) => {
-              handleOnClick(e, "WON");
+              if (!isDisabled()) {
+                handleOnClick(e, "WON");
+              }
             }}
           />
         </Tooltip>
@@ -123,7 +143,7 @@ const ClaimsComponent = ({
               transition: "transform 0.2s ease, color 0.2s ease",
               "&:hover": {
                 transform: "scale(1.2)",
-                color: "#D32F2F", // Darker Red on hover
+                color: "#D32F2F",
               },
             }}
             onClick={(e) => {
@@ -141,7 +161,7 @@ const ClaimsComponent = ({
               transition: "transform 0.2s ease, color 0.2s ease",
               "&:hover": {
                 transform: "scale(1.2)",
-                color: "#FF8F00", // Darker Orange on hover
+                color: "#FF8F00",
               },
             }}
             onClick={(e) => {
@@ -152,36 +172,54 @@ const ClaimsComponent = ({
       )}
       {/* Game is expired due to no acceptor before the game starts.*/}
       {gameStatus === STATUS_COLORS.Expired.value && (
-        <Tooltip title="Expired Game">
+        <Tooltip
+          title={
+            isDisabled()
+              ? "You've already claimed your refund!"
+              : "Expired Game"
+          }
+        >
           <EventBusy
             sx={{
-              color: "#E53935",
-              transition: "transform 0.2s ease, color 0.2s ease",
+              ...iconStyle,
+              color: isDisabled() ? "#9E9E9E" : "#E53935",
+              backgroundColor: isDisabled() ? "#F5F5F5" : "transparent",
               "&:hover": {
-                transform: "scale(1.2)",
-                color: "#D32F2F", // Darker Red on hover
+                ...iconStyle["&:hover"],
+                color: isDisabled() ? "#9E9E9E" : "#D32F2F",
+                backgroundColor: isDisabled() ? "#F5F5F5" : "transparent",
               },
             }}
             onClick={(e) => {
-              handleOnClick(e, "EXPIRED");
+              if (!isDisabled()) {
+                handleOnClick(e, "EXPIRED");
+              }
             }}
           />
         </Tooltip>
       )}
       {/* Game is draw*/}
       {gameStatus === STATUS_COLORS.Draw.value && (
-        <Tooltip title="Game Draw">
+        <Tooltip
+          title={
+            isDisabled() ? "You've already claimed your funds!" : "Game Draw"
+          }
+        >
           <EmojiFlags
             sx={{
-              color: "#42A5F5",
-              transition: "transform 0.2s ease, color 0.2s ease",
+              ...iconStyle,
+              color: isDisabled() ? "#9E9E9E" : "#42A5F5",
+              backgroundColor: isDisabled() ? "#F5F5F5" : "transparent",
               "&:hover": {
-                transform: "scale(1.2)",
-                color: "#1E88E5", // Darker Blue on hover
+                ...iconStyle["&:hover"],
+                color: isDisabled() ? "#9E9E9E" : "#1E88E5",
+                backgroundColor: isDisabled() ? "#F5F5F5" : "transparent",
               },
             }}
             onClick={(e) => {
-              handleOnClick(e, "DRAW");
+              if (!isDisabled()) {
+                handleOnClick(e, "DRAW");
+              }
             }}
           />
         </Tooltip>
