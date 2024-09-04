@@ -117,16 +117,6 @@ export default function Home() {
                 Join A Game
               </Button>
             </Box>
-            <Button
-              sx={{
-                color: "#FF5C00",
-                mt: 2,
-                px: 5,
-                py: 1.5,
-              }}
-            >
-              Play with computer
-            </Button>
           </>
         ) : null}
       </Box>

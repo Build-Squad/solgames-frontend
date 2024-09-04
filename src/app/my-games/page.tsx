@@ -244,6 +244,7 @@ const MyGames = () => {
                       inviteCode={params?.row?.inviteCode}
                       winnerId={params?.row?.winnerId}
                       gameStatus={params?.row?.gameStatus}
+                      withdrawals={params?.row?.withdrawals ?? []}
                     />
                   );
                 },

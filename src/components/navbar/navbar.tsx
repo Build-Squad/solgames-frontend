@@ -27,16 +27,9 @@ import { getRandomColor } from "@/utils/helper";
 const drawerWidth = 240;
 const navLoggedInItems = [
   { text: "Home", route: "/" },
-  { text: "Ranking", route: "/ranking" },
   { text: "My Games", route: "/my-games" },
 ];
-const navLoggedOutItems = [
-  { text: "Play", route: "/play" },
-  { text: "Puzzles", route: "/puzzles" },
-  { text: "Learn", route: "/learn" },
-  { text: "Watch", route: "/watch" },
-  { text: "Community", route: "/community" },
-];
+const navLoggedOutItems = [{ text: "Home", route: "/" }];
 const profileBackgroundColor = getRandomColor();
 
 const DrawerAppBar = () => {
@@ -180,12 +173,6 @@ const DrawerAppBar = () => {
             {!!user?.id ? (
               <>
                 {renderNavButtons(navLoggedInItems)}
-                <Button
-                  onClick={() => router.push("/profile")}
-                  sx={{ color: "#757575" }}
-                >
-                  Profile
-                </Button>
                 <Avatar
                   onClick={handleClick}
                   sx={{

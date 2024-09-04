@@ -19,24 +19,37 @@ import {
 import { Box, Tooltip } from "@mui/material";
 import { useState } from "react";
 import SignTransactionModal from "../modals/SignTransactionModal";
+import { User } from "@/types/user";
+
+interface ClaimInterface {
+  winnerId?: string;
+  gameStatus: string;
+  inviteCode: string;
+  withdrawals?: {
+    amount: string;
+    id: string;
+    transactionHash: string;
+    transactionId: string;
+    user: User;
+  }[];
+}
 
 const ClaimsComponent = ({
   winnerId,
   gameStatus,
   inviteCode,
-}: {
-  winnerId?: string;
-  gameStatus: string;
-  inviteCode: string;
-}) => {
+  withdrawals,
+}: ClaimInterface) => {
+  // Component states
   const [withdrawalType, setWithdrawalType] = useState<WithdrawalTypes>();
   const [showSignTransactionModal, setShowSignTransactionModal] =
     useState(false);
 
+  // Custom hooks
   const { showMessage } = useSnackbar();
   const { user } = useAuth();
   const { data: escrowData } = useGetEscrowDetails(inviteCode);
-  console.log(escrowData);
+
   const handleOnClick = async (
     e: React.MouseEvent<SVGSVGElement, MouseEvent>,
     type: "WON" | "LOST" | "PENDING" | "EXPIRED" | "DRAW"
@@ -63,6 +76,22 @@ const ClaimsComponent = ({
     STATUS_COLORS.Scheduled.value,
     STATUS_COLORS.InProgress.value,
   ];
+
+  const getWithdrawalAmount = () => {
+    switch (withdrawalType) {
+      case "WON":
+        return escrowData?.data?.amount * 2;
+      case "DRAW":
+      case "EXPIRED":
+        return escrowData?.data?.amount;
+      default:
+        return 0;
+    }
+  };
+
+  const getDisabledValue = () => {
+    
+  }
 
   return (
     <Box sx={{ mt: 1 }}>
@@ -168,7 +197,7 @@ const ClaimsComponent = ({
           withDrawalType={withdrawalType}
           inviteCode={inviteCode}
           vaultId={escrowData?.data?.vaultId}
-          withdrawalAmount={escrowData?.data?.amount}
+          withdrawalAmount={getWithdrawalAmount()}
         />
       ) : null}
     </Box>

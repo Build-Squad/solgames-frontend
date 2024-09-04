@@ -10,7 +10,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 
 export const useGetEscrowDetails = (inviteCode: string) => {
   return useQuery({
-    queryKey: [`game-details-${inviteCode}`],
+    queryKey: [`escrow-details-${inviteCode}`],
     queryFn: () => EscrowServices.getEscrow(inviteCode),
     enabled: !!inviteCode,
   });

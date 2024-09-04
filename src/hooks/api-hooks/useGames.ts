@@ -27,7 +27,7 @@ export const useGetAllGames = (id: string) => {
 
 export const useGetGameWithInviteCode = (inviteCode: string) => {
   return useQuery({
-    queryKey: [`game-details-${inviteCode}`],
+    queryKey: [`game-detail-${inviteCode}`],
     queryFn: () => GameServices.getGameWithInviteCode(inviteCode),
     enabled: !!inviteCode,
   });

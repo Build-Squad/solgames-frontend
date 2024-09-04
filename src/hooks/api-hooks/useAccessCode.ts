@@ -1,6 +1,6 @@
 import AccessCodeServices from "@/api-services/AccessCodeServices";
 import { VerifyAccessCodeRequest } from "@/api-services/interfaces/accessCodeInterface";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 
 export const useVerifyAccessCode = () => {
   const {

@@ -40,6 +40,8 @@ export default function Play({}: Props) {
 
   if (!isLoading && !!gameData) {
     let hasError = false;
+
+    // The user is not logged in and tried to visit the join game page.
     if (!user?.id) {
       hasError = true;
       showMessage("Login to play the game", "error");
@@ -47,6 +49,8 @@ export default function Play({}: Props) {
         router.push("/");
       }, 3000);
     }
+
+    // Any random user is trying to access the game.
     if (
       !(
         gameData?.data?.creatorId == user?.id ||
@@ -59,6 +63,8 @@ export default function Play({}: Props) {
         router.push("/my-games");
       }, 3000);
     }
+
+    // Game has not started yet as the status is not inProgress
     if (gameData?.data?.gameStatus != STATUS_COLORS.InProgress.value) {
       hasError = true;
       showMessage("The game has not started or is finished", "error");
