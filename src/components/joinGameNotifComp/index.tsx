@@ -45,6 +45,15 @@ const JoinGameNotificationComponent: React.FC = () => {
     const now = new Date();
 
     userGames?.forEach((game: Game) => {
+      // Check if the game is not in progress
+      if (game.gameStatus !== STATUS_COLORS.InProgress.value) {
+        setGameInQueue(
+          (prevQueue) =>
+            prevQueue?.filter((queuedGame) => queuedGame.id !== game.id) || []
+        );
+        return;
+      }
+
       const startTime = new Date(game.gameDateTime);
       const diff = now.getTime() - startTime.getTime();
 

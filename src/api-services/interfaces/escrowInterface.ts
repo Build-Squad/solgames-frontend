@@ -65,3 +65,21 @@ export interface ExecuteEscrowResponse {
   success: boolean;
   message: string;
 }
+
+// Withdrawal transactions
+
+export type WithdrawalTypes = "WON" | "EXPIRED" | "DRAW";
+
+export interface WithdrawalTransactionRequest {
+  inviteCode: string;
+  publicKey: string;
+  type: WithdrawalTypes;
+}
+
+export interface ExecuteWithdrawalEscrowRequest {
+  inviteCode: string;
+  transactionId: string;
+  signedTransaction: string;
+  publicKey: string;
+  type: WithdrawalTypes;
+}

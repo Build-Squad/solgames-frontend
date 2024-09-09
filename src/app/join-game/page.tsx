@@ -1,7 +1,9 @@
 "use client";
+import ConnectModal from "@/components/modals/connectModal";
 import SignTransactionModal from "@/components/modals/SignTransactionModal";
 import NoDataFound from "@/components/noDataFound";
 import { useAuth } from "@/context/authContext";
+import { useLoader } from "@/context/loaderContext";
 import { useSnackbar } from "@/context/snackbarContext";
 import { useWeb3Auth } from "@/context/web3AuthProvider";
 import { useDepositAcceptTransaction } from "@/hooks/api-hooks/useEscrow";
@@ -13,19 +15,43 @@ import React, { useEffect, useState } from "react";
 type Props = {};
 
 export default function JoinGame({}: Props) {
+  // Next hooks
   const router = useRouter();
   const searchParams = useSearchParams();
   const joiningCode = searchParams.get("joiningCode");
 
+  // Component states
+  const [openConnectModal, setOpenConnectModal] = useState(false);
+
+  // custom context hooks
   const { user } = useAuth();
-  const { login } = useWeb3Auth();
   const { showMessage } = useSnackbar();
+  const { showLoader, hideLoader } = useLoader();
 
   const { data: gameData, refetch: refetchGameData } =
     useGetGameWithInviteCode(joiningCode);
 
-  const { depositAcceptGameResponse, depositAcceptGameMutateAsync } =
-    useDepositAcceptTransaction();
+  const {
+    depositAcceptGameResponse,
+    depositAcceptGameMutateAsync,
+    isDepositAcceptGameLoading,
+  } = useDepositAcceptTransaction();
+
+  useEffect(() => {
+    if (isDepositAcceptGameLoading) {
+      showLoader();
+    } else {
+      hideLoader();
+    }
+  }, [isDepositAcceptGameLoading]);
+
+  useEffect(() => {
+    if (!user?.id) {
+      setOpenConnectModal(true);
+    } else {
+      setOpenConnectModal(false);
+    }
+  }, [user]);
 
   useEffect(() => {
     if (
@@ -40,6 +66,7 @@ export default function JoinGame({}: Props) {
       setTimeout(() => {
         router.back();
       }, 3000);
+    } else if (!user?.id) {
     } else {
       initializeAcceptGame();
     }
@@ -67,19 +94,24 @@ export default function JoinGame({}: Props) {
     return <NoDataFound message="No joining code found!" />;
   }
 
-  if (!user?.id) {
-    login();
-    return null;
-  }
-
   return (
-    <SignTransactionModal
-      open={true}
-      handleClose={() => {}}
-      type={"ACCEPT"}
-      betAmount={gameData.data.betAmount}
-      inviteCode={joiningCode}
-      escrowData={depositAcceptGameResponse?.data}
-    />
+    <>
+      {user?.id && !openConnectModal ? (
+        <SignTransactionModal
+          open={true}
+          handleClose={() => {}}
+          type={"ACCEPT"}
+          betAmount={gameData.data.betAmount}
+          inviteCode={joiningCode}
+          escrowData={depositAcceptGameResponse?.data}
+        />
+      ) : null}
+      <ConnectModal
+        open={openConnectModal}
+        onClose={() => {
+          setOpenConnectModal(false);
+        }}
+      />
+    </>
   );
 }

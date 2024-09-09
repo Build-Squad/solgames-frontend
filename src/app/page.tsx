@@ -7,6 +7,7 @@ import { useState } from "react";
 import CreateGameModal from "@/components/modals/createGameModal";
 import { useAuth } from "@/context/authContext";
 import JoinGameModal from "@/components/modals/joinGameModal";
+import { useSnackbar } from "@/context/snackbarContext";
 
 const questrial = Questrial({
   weight: "400",
@@ -16,10 +17,16 @@ const questrial = Questrial({
 export default function Home() {
   const [joinGameOpen, setJoinGameOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
+
+  const { showMessage } = useSnackbar();
   const { user } = useAuth();
 
   const handleClose = () => setJoinGameOpen(false);
   const createGame = () => {
+    if (!user?.accessCode?.id) {
+      showMessage("You need an access code before creating a game", "error");
+      return;
+    }
     setCreateModalOpen(true);
   };
 
@@ -117,16 +124,6 @@ export default function Home() {
                 Join A Game
               </Button>
             </Box>
-            <Button
-              sx={{
-                color: "#FF5C00",
-                mt: 2,
-                px: 5,
-                py: 1.5,
-              }}
-            >
-              Play with computer
-            </Button>
           </>
         ) : null}
       </Box>

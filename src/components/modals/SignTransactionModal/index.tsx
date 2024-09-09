@@ -14,10 +14,19 @@ import { useAuth } from "@/context/authContext";
 import { useAcceptGame } from "@/hooks/api-hooks/useGames";
 import { useWeb3Auth } from "@/context/web3AuthProvider";
 import { useRouter } from "next/navigation";
-import { useExecuteEscrow } from "@/hooks/api-hooks/useEscrow";
-import { CreateAndDepositEscrowResponse } from "@/api-services/interfaces/escrowInterface";
-import { clusterApiUrl, Connection, Transaction } from "@solana/web3.js";
+import {
+  useExecuteEscrow,
+  useExecuteWithdrawalTransaction,
+  useWithdrawalTransaction,
+} from "@/hooks/api-hooks/useEscrow";
+import {
+  CreateAndDepositEscrowResponse,
+  WithdrawalTypes,
+} from "@/api-services/interfaces/escrowInterface";
+import { VersionedTransaction } from "@solana/web3.js";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { useConnectUser } from "@/hooks/api-hooks/useUsers";
+import { signTransactionWithSolanaWallet } from "@/utils/helper";
 
 const style = {
   position: "absolute",
@@ -34,11 +43,16 @@ interface SignTransactionProps {
   open: boolean;
   handleClose: () => void;
   type?: string;
-  betAmount: string;
+  betAmount?: string;
   createGame?: () => Promise<void>;
   inviteCode: string;
   // Need to change for accept and deposit as well
-  escrowData: CreateAndDepositEscrowResponse["data"];
+  escrowData?: CreateAndDepositEscrowResponse["data"];
+
+  // For withdrawal transaction
+  withDrawalType?: WithdrawalTypes;
+  vaultId?: string;
+  withdrawalAmount?: string;
 }
 
 const SignTransactionModal = ({
@@ -49,76 +63,29 @@ const SignTransactionModal = ({
   createGame,
   inviteCode,
   escrowData,
+
+  // For withdrawal transaction
+  withDrawalType,
+  vaultId,
+  withdrawalAmount,
 }: SignTransactionProps) => {
+  // Component states
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const [transactionApproved, setTransactionApproved] = useState(false);
+
+  // Custom hooks
+  const { withdrawalTransactionMutateAsync } = useWithdrawalTransaction();
+
+  const { executeWithdrawalTransactionMutateAsync } =
+    useExecuteWithdrawalTransaction();
+  const { publicKey, signTransaction } = useWallet();
   const { showMessage } = useSnackbar();
-  const { user } = useAuth();
+  const { user, login: loginUser } = useAuth();
   const { acceptGameMutateAsync } = useAcceptGame();
   const { transfer } = useWeb3Auth();
   const { executeEscrowMutateAsync } = useExecuteEscrow();
-
-  const { publicKey, signTransaction } = useWallet();
-
-  // For Solana wallets
-  const signTransactionWithSolanaWallet = async (
-    serializedTransaction: string
-  ) => {
-    try {
-      if (!publicKey || !signTransaction) {
-        showMessage(
-          "Wallet not connected or no signing capability available.",
-          "info"
-        );
-        return {
-          data: null,
-          success: false,
-          message: "Account not connected!",
-        };
-      }
-      const connection = new Connection(clusterApiUrl("devnet"));
-      const transaction = Transaction.from(
-        Buffer.from(serializedTransaction, "base64")
-      );
-      const signedTransaction = await signTransaction(transaction);
-
-      // Serialize the signed transaction
-      const serializedSignedTx = signedTransaction.serialize();
-      const encodedSerializedSignedTx = serializedSignedTx.toString("base64");
-
-      // Send the serialized signed transaction to the Solana network
-      const signature = await connection.sendRawTransaction(
-        serializedSignedTx,
-        {
-          skipPreflight: false,
-        }
-      );
-
-      // Confirm the transaction
-      const confirmation = await connection.confirmTransaction(
-        signature,
-        "confirmed"
-      );
-
-      if (confirmation.value.err) {
-        throw new Error();
-      }
-
-      return {
-        data: { encodedSerializedSignedTx },
-        success: true,
-        message: "Transaction Successfully executed!",
-      };
-    } catch (error) {
-      console.error("Error signing the transaction: ", error);
-      return {
-        data: null,
-        success: false,
-        message: "Transfer failed!",
-      };
-    }
-  };
+  const { connectionMutateAsync } = useConnectUser();
 
   // 4)
   // After the funds are transferred, execute the transaction
@@ -149,7 +116,10 @@ const SignTransactionModal = ({
     let tx;
     if (user?.verifier == "wallet") {
       tx = await signTransactionWithSolanaWallet(
-        escrowData?.depositSerializedTransaction?.serializedTransaction
+        escrowData?.depositSerializedTransaction?.serializedTransaction,
+        signTransaction,
+        publicKey,
+        showMessage
       );
     } else {
       tx = await transfer(
@@ -179,10 +149,14 @@ const SignTransactionModal = ({
   // 3.2)
   // Transfer the funds by signing the transaction as an acceptor
   const handleAcceptGame = async () => {
+    setIsLoading(true);
     let tx;
     if (user?.verifier == "wallet") {
       tx = await signTransactionWithSolanaWallet(
-        escrowData?.depositSerializedTransaction?.serializedTransaction
+        escrowData?.depositSerializedTransaction?.serializedTransaction,
+        signTransaction,
+        publicKey,
+        showMessage
       );
     } else {
       tx = await transfer(
@@ -205,6 +179,13 @@ const SignTransactionModal = ({
         });
         setTransactionApproved(true);
         showMessage(res.message);
+
+        // Here we need to recall the login so as to update the user in the useAuth
+        const connectedUser = await connectionMutateAsync({ publicKey });
+        if (connectedUser?.data?.id) {
+          loginUser(connectedUser.data);
+        }
+
         router.push("/my-games");
         handleClose();
       } else {
@@ -213,13 +194,70 @@ const SignTransactionModal = ({
     } else {
       showMessage(tx.message, "error");
     }
+    setIsLoading(false);
+  };
+
+  const handleWithdrawalTransaction = async ({
+    type,
+  }: {
+    type: WithdrawalTypes;
+  }) => {
+    if (!type) return;
+    setIsLoading(true);
+    try {
+      const withdrawalTransaction = await withdrawalTransactionMutateAsync({
+        inviteCode,
+        publicKey: user?.publicKey,
+        type,
+      });
+      if (withdrawalTransaction.success) {
+        let tx;
+        if (user?.verifier == "wallet") {
+          tx = await signTransactionWithSolanaWallet(
+            withdrawalTransaction?.data?.serializedTransaction,
+            signTransaction,
+            publicKey,
+            showMessage
+          );
+        } else {
+          tx = await transfer(
+            withdrawalTransaction?.data?.serializedTransaction
+          );
+        }
+        if (tx.success) {
+          setTransactionApproved(true);
+          handleClose();
+          const res = await executeWithdrawalTransactionMutateAsync({
+            inviteCode,
+            publicKey: user?.publicKey,
+            signedTransaction: tx.data.encodedSerializedSignedTx,
+            transactionId: withdrawalTransaction?.data?.transactionId,
+            type,
+          });
+
+          if (res.success) {
+            showMessage(res.message, "success");
+          } else {
+            showMessage(res?.message, "error");
+          }
+        } else {
+          showMessage(withdrawalTransaction.message, "error");
+        }
+      }
+    } catch (e) {
+      console.error(e);
+      showMessage("Error initiating withdrawal transaction!", "error");
+    }
+    setIsLoading(false);
   };
 
   // 2)
-  // While signing we'll see if to call accept or create API
+  // While signing we'll see if to call accept create or withdrawal API
   const handleSign = async () => {
     if (type == "ACCEPT") {
       handleAcceptGame();
+    } else if (type == "WITHDRAWAL") {
+      if (withDrawalType) handleWithdrawalTransaction({ type: withDrawalType });
     } else {
       handleCreateGame();
     }
@@ -245,19 +283,40 @@ const SignTransactionModal = ({
           <b>Token</b> : SOL
         </Typography>
         <Divider sx={{ my: 2 }} />
-        <Typography variant="body2">
-          <b>Sender address</b> : {user?.publicKey}
-        </Typography>
-        <Typography variant="body2" sx={{ mt: 1 }}>
-          <b>Escrow id</b> : {escrowData?.escrowDetails?.vaultId}
-        </Typography>
-        <Divider sx={{ my: 2 }} />
-        <Box display="flex" justifyContent="space-between" mb={1}>
-          <Typography variant="body2" fontWeight={"bold"}>
-            Amount:{" "}
-          </Typography>
-          <Typography variant="body2">{betAmount} SOL</Typography>
-        </Box>
+        {type == "WITHDRAWAL" ? (
+          <>
+            <Typography variant="body2">
+              <b>Escrow address</b> : {vaultId}
+            </Typography>
+            <Typography variant="body2" sx={{ mt: 1 }}>
+              <b>User address: </b> : {user?.publicKey}
+            </Typography>
+            <Divider sx={{ my: 2 }} />
+            <Box display="flex" justifyContent="space-between" mb={1}>
+              <Typography variant="body2" fontWeight={"bold"}>
+                Withdrawal amount:{" "}
+              </Typography>
+              <Typography variant="body2">{withdrawalAmount} SOL</Typography>
+            </Box>
+          </>
+        ) : (
+          <>
+            <Typography variant="body2">
+              <b>Sender address</b> : {user?.publicKey}
+            </Typography>
+            <Typography variant="body2" sx={{ mt: 1 }}>
+              <b>Escrow id</b> : {escrowData?.escrowDetails?.vaultId}
+            </Typography>
+            <Divider sx={{ my: 2 }} />
+            <Box display="flex" justifyContent="space-between" mb={1}>
+              <Typography variant="body2" fontWeight={"bold"}>
+                Amount:{" "}
+              </Typography>
+              <Typography variant="body2">{betAmount} SOL</Typography>
+            </Box>
+          </>
+        )}
+
         <Button
           variant="contained"
           color="primary"

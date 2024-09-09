@@ -169,9 +169,6 @@ export const Web3AuthProvider: React.FC<Web3AuthProviderProps> = ({
     try {
       const solanaWallet = new SolanaWallet(provider);
 
-      // Request the connected wallet accounts
-      const connection = new Connection(chainConfig.rpcTarget);
-
       // Deserialize the transaction received from the backend
       const transaction = VersionedTransaction.deserialize(
         new Uint8Array(Buffer.from(serializedTransaction, "base64"))

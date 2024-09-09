@@ -6,3 +6,9 @@ export const STATUS_COLORS = {
   Draw: { value: "Draw", background: "#607D8B", color: "#ffffff" },
   Expired: { value: "Expired", background: "#F44336", color: "#ffffff" },
 };
+
+export const CLAIM_ALERTS = {
+  LOST: "You've lost the game, create a new game and start betting your tokens",
+  PENDING:
+    "Game decision is pending. Game not started or is in progress.",
+};

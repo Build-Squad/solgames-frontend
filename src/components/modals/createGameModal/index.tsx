@@ -23,6 +23,7 @@ import { generateInviteCode } from "@/utils/helper";
 import CreateCelebrationModal from "../createCelebrationModal";
 import SignTransactionModal from "../SignTransactionModal";
 import { useCreateEscrow } from "@/hooks/api-hooks/useEscrow";
+import VaultLoader from "@/components/loadingComponent/vaultLoader";
 
 const questrial = Questrial({
   weight: "400",
@@ -276,14 +277,7 @@ const CreateGameModal = ({ handleClose }) => {
               },
             }}
           >
-            {isCreateEscrowLoading ? (
-              <CircularProgress
-                size={24}
-                sx={{ fontWeight: "bold", color: "#000" }}
-              />
-            ) : (
-              "Create Game"
-            )}
+            Create Game
           </Button>
         </DialogActions>
       </Dialog>
@@ -301,6 +295,7 @@ const CreateGameModal = ({ handleClose }) => {
         inviteCode={inviteCode}
         escrowData={createEscrowResponse?.data}
       />
+      <VaultLoader open={isCreateEscrowLoading} />
     </>
   );
 };

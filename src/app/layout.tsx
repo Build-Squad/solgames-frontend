@@ -11,6 +11,7 @@ import { LoaderProvider } from "@/context/loaderContext";
 import GameStartNotificationComponent from "@/components/gameStartNotifComp";
 import JoinGameNotificationComponent from "@/components/joinGameNotifComp";
 import SolanaWalletContextProvider from "@/context/solanaWalletContextProvider";
+import RouteGuard from "@/context/routeGuard";
 const inter = Inter({ subsets: ["latin"] });
 
 export default function RootLayout({
@@ -27,10 +28,12 @@ export default function RootLayout({
               <SnackbarProvider>
                 <SolanaWalletContextProvider>
                   <Web3AuthProvider>
-                    <Navbar />
-                    {children}
-                    <GameStartNotificationComponent />
-                    <JoinGameNotificationComponent />
+                    <RouteGuard>
+                      <Navbar />
+                      {children}
+                      <GameStartNotificationComponent />
+                      <JoinGameNotificationComponent />
+                    </RouteGuard>
                   </Web3AuthProvider>
                 </SolanaWalletContextProvider>
               </SnackbarProvider>

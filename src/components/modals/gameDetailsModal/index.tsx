@@ -165,7 +165,14 @@ const GameDetailsDialog: React.FC<GameDetailsDialogProps> = ({
               <Typography variant="subtitle1" fontWeight="bold">
                 Game Creator:
               </Typography>
-              <Typography>
+              <Typography
+                sx={{
+                  maxWidth: "60%",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
                 {game?.creator?.name ?? game?.creator?.publicKey}
               </Typography>
             </Grid>
@@ -181,7 +188,14 @@ const GameDetailsDialog: React.FC<GameDetailsDialogProps> = ({
               <Typography variant="subtitle1" fontWeight="bold">
                 Game Acceptor:
               </Typography>
-              <Typography>
+              <Typography
+                sx={{
+                  maxWidth: "60%",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
                 {game?.acceptor?.name ?? game?.acceptor?.publicKey}
               </Typography>
             </Grid>

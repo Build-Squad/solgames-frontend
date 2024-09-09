@@ -1,22 +1,23 @@
 "use client";
 import { useAuth } from "@/context/authContext";
 import { useGetAllGames } from "@/hooks/api-hooks/useGames";
-import {
-  Box,
-  Menu,
-  MenuItem,
-  IconButton,
-  Chip,
-  Tabs,
-  Tab,
-} from "@mui/material";
+import { Chip, Tabs, Tab, Tooltip, Box } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
-import React, { EventHandler, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import GameDetailsModal from "@/components/modals/gameDetailsModal";
-import { STATUS_COLORS } from "@/utils/constants";
-import { CheckCircle, Cancel, ContentCopy } from "@mui/icons-material";
+import { CLAIM_ALERTS, STATUS_COLORS } from "@/utils/constants";
+import {
+  CheckCircle,
+  Cancel,
+  ContentCopy,
+  MonetizationOn,
+  HourglassEmpty,
+  EventBusy,
+  EmojiFlags,
+} from "@mui/icons-material";
 import { useSnackbar } from "@/context/snackbarContext";
+import { useWithdrawalTransaction } from "@/hooks/api-hooks/useEscrow";
+import ClaimsComponent from "@/components/claimComponent";
 
 const renderIsGameAccepted = (params) => {
   return (
@@ -45,45 +46,6 @@ const renderGameStatus = (params) => {
   const value = params.value;
   const chipStyle = STATUS_COLORS[value];
   return <Chip color="success" label={value} sx={{ ...chipStyle }} />;
-};
-
-const DropdownMenu = ({ options }) => {
-  const [anchorEl, setAnchorEl] = useState(null);
-  const open = Boolean(anchorEl);
-
-  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation();
-    setAnchorEl(e.currentTarget);
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-
-  return (
-    <div>
-      <IconButton
-        aria-controls={open ? "action-menu" : undefined}
-        aria-haspopup="true"
-        onClick={handleClick}
-      >
-        <MoreVertIcon />
-      </IconButton>
-      <Menu
-        id="action-menu"
-        anchorEl={anchorEl}
-        open={open}
-        onClose={handleClose}
-        MenuListProps={{ "aria-labelledby": "action-menu" }}
-      >
-        {options.map((option) => (
-          <MenuItem key={option} onClick={handleClose}>
-            {option}
-          </MenuItem>
-        ))}
-      </Menu>
-    </div>
-  );
 };
 
 const MyGames = () => {
@@ -272,13 +234,20 @@ const MyGames = () => {
                 cellClassName: "center-align",
               },
               {
-                field: "actions",
-                headerName: "Actions",
+                field: "claims",
+                headerName: "Claims",
                 flex: 1,
                 headerAlign: "center",
-                renderCell: (params) => (
-                  <DropdownMenu options={["View Details", "Edit", "Delete"]} />
-                ),
+                renderCell: (params) => {
+                  return (
+                    <ClaimsComponent
+                      inviteCode={params?.row?.inviteCode}
+                      winnerId={params?.row?.winnerId}
+                      gameStatus={params?.row?.gameStatus}
+                      withdrawals={params?.row?.withdrawals ?? []}
+                    />
+                  );
+                },
                 cellClassName: "center-align",
               },
             ]}
