@@ -161,7 +161,10 @@ const ConnectModal: FC<{ open: boolean; onClose: () => void }> = ({
                     bgcolor: "rgba(90, 90, 90, 0.9)",
                   },
                 }}
-                onClick={login}
+                onClick={() => {
+                  onClose();
+                  login();
+                }}
               >
                 Connect with Social Media
               </Button>
