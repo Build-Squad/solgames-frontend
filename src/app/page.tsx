@@ -8,6 +8,7 @@ import CreateGameModal from "@/components/modals/createGameModal";
 import { useAuth } from "@/context/authContext";
 import JoinGameModal from "@/components/modals/joinGameModal";
 import { useSnackbar } from "@/context/snackbarContext";
+import { useRouter } from "next/navigation";
 
 const questrial = Questrial({
   weight: "400",
@@ -15,6 +16,7 @@ const questrial = Questrial({
 });
 
 export default function Home() {
+  const router = useRouter();
   const [joinGameOpen, setJoinGameOpen] = useState(false);
   const [createModalOpen, setCreateModalOpen] = useState(false);
 
@@ -25,6 +27,7 @@ export default function Home() {
   const createGame = () => {
     if (!user?.accessCode?.id) {
       showMessage("You need an access code before creating a game", "error");
+      router.push("/my-games");
       return;
     }
     setCreateModalOpen(true);
