@@ -21,7 +21,7 @@ export const SnackbarProvider: React.FC<{ children: ReactNode }> = ({
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [severity, setSeverity] = useState<AlertColor>("success");
-  const [duration, setDuration] = useState<number>(3000);
+  const [duration, setDuration] = useState<number>(1500);
 
   const showMessage = (
     message: string,
