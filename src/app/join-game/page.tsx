@@ -65,7 +65,7 @@ export default function JoinGame({}: Props) {
       );
       setTimeout(() => {
         router.back();
-      }, 3000);
+      }, 2000);
     } else if (!user?.id) {
     } else {
       initializeAcceptGame();

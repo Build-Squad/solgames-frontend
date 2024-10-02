@@ -25,7 +25,7 @@ export default function Home() {
 
   const handleClose = () => setJoinGameOpen(false);
   const createGame = () => {
-    if (!user?.accessCode?.id) {
+    if (!user?.accessCode) {
       showMessage("You need an access code before creating a game", "error");
       router.push("/my-games");
       return;

@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "./authContext";
 import AccessCodeModal from "@/components/modals/accessCodeModal";
 import { useVerifyAccessCode } from "@/hooks/api-hooks/useAccessCode";
-import { useSnackbar } from "./snackbarContext";
 
 interface RouteGuardProps {
   children: React.ReactNode;
@@ -17,8 +16,7 @@ const RouteGuard: React.FC<RouteGuardProps> = ({ children }) => {
   const router = useRouter();
   const pathname = usePathname();
 
-  const { user, login } = useAuth();
-  const { showMessage } = useSnackbar();
+  const { user, setUser } = useAuth();
   const [showEnterAccessCode, setShowEnterAccessCode] = useState(false);
   const { verifyEscrowMutateAsync } = useVerifyAccessCode();
 
@@ -27,7 +25,6 @@ const RouteGuard: React.FC<RouteGuardProps> = ({ children }) => {
     if (!user?.id) {
       // 1.1: If the route is not "/join-game", redirect to the home page
       if (!pathname.includes(joinGameRoute) && pathname !== "/") {
-        showMessage("Login to continue", "error");
         router.push(homePageRoute);
       }
       // If the user is on the "join-game" route, do nothing
@@ -35,10 +32,9 @@ const RouteGuard: React.FC<RouteGuardProps> = ({ children }) => {
     // Case 2: User is logged in
     else {
       // 2.1: User does not have an access code
-      if (!user?.accessCode?.id) {
+      if (!user?.accessCode) {
         // 2.2.2: If the route is any other than "join-game", show the access code modal
         if (!joinGameRoute.includes(pathname)) {
-          showMessage("Enter the access code", "info");
           setShowEnterAccessCode(true);
         }
         // 2.2.1: If the route is "join-game", let the user operate normally
@@ -48,14 +44,16 @@ const RouteGuard: React.FC<RouteGuardProps> = ({ children }) => {
         setShowEnterAccessCode(false);
       }
     }
-  }, [user, pathname, router]);
+  }, [user, pathname, router, user?.accessCode]);
 
   const handleSubmitAccessCodeVerification = async (code: string) => {
-    // verify the access code, if valid, fetch user details again and fetch user details and store in the useAuth login method
+    // verify the access code, if valid, fetch user details and store in the useAuth login method
     const verifyRes = await verifyEscrowMutateAsync({ code, userId: user?.id });
     if (verifyRes?.success) {
-      login(verifyRes?.data?.user);
-      setShowEnterAccessCode(false);
+      setUser((prevUser) => ({
+        ...prevUser,
+        accessCode: code,
+      }));
     }
   };
 
