@@ -598,14 +598,16 @@ const Chessboard = () => {
                     className={styles.piece}
                   />
                 )}
-                {possibleMoves.includes(indexToSquare(index)) && (
+
+                {/* Enable this when doing begineer's mode */}
+                {/* {possibleMoves.includes(indexToSquare(index)) && (
                   <Box
                     className={`${styles.possibleMove} ${
                       doesPossibleMoveCutsPiece(index) &&
                       styles.possibleMoveCanCut
                     }`}
                   />
-                )}
+                )} */}
               </Box>
             ))}
           </Box>
