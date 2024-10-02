@@ -28,6 +28,7 @@ const Spinner: React.FC<SpinnerProps> = ({
       alignItems="center"
       flexDirection="column"
       height="100%"
+      width="100%"
       sx={{ ...sx }}
     >
       <CircularProgress

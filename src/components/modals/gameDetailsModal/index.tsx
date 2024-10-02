@@ -14,6 +14,7 @@ import { STATUS_COLORS } from "@/utils/constants";
 import { differenceInSeconds } from "date-fns";
 import { Game } from "@/types/game";
 import { useRouter } from "next/navigation";
+import DotsLoader from "@/components/loadingComponent/dotLoader";
 
 interface GameDetailsDialogProps {
   handleClose: () => void;
@@ -54,7 +55,7 @@ const GameDetailsDialog: React.FC<GameDetailsDialogProps> = ({
   game,
 }) => {
   const router = useRouter();
-  const [timeLeft, setTimeLeft] = useState<number>(0);
+  const [timeLeft, setTimeLeft] = useState<number>();
 
   const gameDate = new Date(game?.gameDateTime);
   const playButtonEnabled =
@@ -234,6 +235,19 @@ const GameDetailsDialog: React.FC<GameDetailsDialogProps> = ({
               }}
             />
           </Grid>
+          {timeLeft == undefined && (
+            <Box
+              sx={{
+                mt: 2,
+                height: "100%",
+                width: "100%",
+                marginBottom: "-2%",
+                marginLeft: "1%",
+              }}
+            >
+              <DotsLoader />
+            </Box>
+          )}
           {timeLeft > 0 &&
             [
               STATUS_COLORS.Scheduled.value,
