@@ -46,7 +46,12 @@ const JoinGameNotificationComponent: React.FC = () => {
 
     userGames?.forEach((game: Game) => {
       // Check if the game is not in progress
-      if (game.gameStatus !== STATUS_COLORS.InProgress.value) {
+      if (
+        ![
+          STATUS_COLORS.InProgress.value,
+          STATUS_COLORS.Accepted.value,
+        ].includes(game.gameStatus)
+      ) {
         setGameInQueue(
           (prevQueue) =>
             prevQueue?.filter((queuedGame) => queuedGame.id !== game.id) || []
@@ -108,7 +113,7 @@ const JoinGameNotificationComponent: React.FC = () => {
 
   const handleRedirect = () => {
     const gameData = gameInQueue?.[0];
-    router.push(`play?inviteCode=${gameData.inviteCode}`);
+    router.push(`play?inviteCode=${gameData?.inviteCode}`);
   };
 
   const formatTimeLeft = (seconds: number | null) => {

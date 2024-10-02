@@ -98,7 +98,7 @@ export default function JoinGame({}: Props) {
           open={true}
           handleClose={() => {}}
           type={"ACCEPT"}
-          betAmount={gameData.data.betAmount}
+          betAmount={gameData?.data?.betAmount}
           inviteCode={joiningCode}
           escrowData={depositAcceptGameResponse?.data}
         />

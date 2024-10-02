@@ -9,6 +9,7 @@ export const useGetAllGames = (id: string) => {
     queryKey: [`all-games-with-id-${currentId}`],
     queryFn: () => GameServices.getGamesWithId(currentId),
     enabled: !!currentId,
+    staleTime: 0,
   });
 
   const updatedRefetch = useCallback(
@@ -30,6 +31,7 @@ export const useGetGameWithInviteCode = (inviteCode: string) => {
     queryKey: [`game-detail-${inviteCode}`],
     queryFn: () => GameServices.getGameWithInviteCode(inviteCode),
     enabled: !!inviteCode,
+    staleTime: 0,
   });
 };
 

@@ -7,8 +7,6 @@ const useVerifySolanaWallet = () => {
   const { user, logout } = useAuth();
 
   useEffect(() => {
-    console.log("user?.publicKey ===== ", user?.publicKey)
-    console.log("publicKey ===== ", publicKey)
     if (user?.verifier == "wallet") {
       if (user?.publicKey != publicKey) {
         disconnect();
