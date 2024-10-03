@@ -27,6 +27,7 @@ import MoveWarningSnackbar, {
   WARNING_TIME_IN_SECONDS,
 } from "../moveWarningSnackbar";
 import LooserModal from "@/components/modals/looserModal";
+import { ChessboardProps } from "./interface";
 
 const PLAYER_TURN_TIME = 240;
 
@@ -82,7 +83,7 @@ const formatTime = (seconds: number) => {
     .padStart(2, "0")}`;
 };
 
-const Chessboard = () => {
+const Chessboard = ({ creator, acceptor }: ChessboardProps) => {
   const router = useRouter();
 
   // State related to chessboard
@@ -440,6 +441,23 @@ const Chessboard = () => {
     handleInactivity("INACTIVITY_EXHAUST");
   };
 
+  // If current play is white that means the user is a white player
+  const getPlayerDetails = ({ homePlayer }: { homePlayer: boolean }) => {
+    let result = "";
+    if (homePlayer) {
+      result = user?.publicKey;
+    } else {
+      if (user?.publicKey == acceptor?.publicKey) {
+        result = creator?.publicKey;
+      } else result = acceptor?.publicKey;
+    }
+    return result
+      ? result.length > 6
+        ? `${result.slice(0, 6)}...`
+        : result
+      : "";
+  };
+
   return (
     <>
       <Box
@@ -455,8 +473,6 @@ const Chessboard = () => {
       >
         <Box className={styles.boardContainer}>
           {/* The player box */}
-
-          {/* The player box */}
           {isWhitePlayer ? (
             <>
               <Box
@@ -467,11 +483,11 @@ const Chessboard = () => {
                   transform: "translateX(-100%)",
                 }}
               >
+                {/* This is when the user is a white player so we need black player on the top left */}
                 <PlayerComp
                   isActive={chess.turn() == "b"}
                   alignDirection={"right"}
-                  title="Sanjay Meena"
-                  rank={"Master"}
+                  title={getPlayerDetails({ homePlayer: false })}
                   pieces={[
                     ...capturedBlackPieces.map(
                       (piece) => pieceImages[piece.toUpperCase()]
@@ -497,11 +513,11 @@ const Chessboard = () => {
                   transform: "translateX(100%)",
                 }}
               >
+                {/* This is when the user is a white player so we need white player on bottom */}
                 <PlayerComp
                   isActive={chess.turn() == "w"}
                   alignDirection={"left"}
-                  title="Parikshit Singh"
-                  rank={"Junior"}
+                  title={getPlayerDetails({ homePlayer: true })}
                   pieces={[
                     ...capturedWhitePieces.map(
                       (piece) => pieceImages[piece.toLowerCase()]
@@ -530,11 +546,11 @@ const Chessboard = () => {
                   transform: "translateX(-100%)",
                 }}
               >
+                {/* This is when the user is a black player so we need white player on the top left */}
                 <PlayerComp
                   isActive={chess.turn() == "w"}
                   alignDirection={"right"}
-                  title="Parikshit Singh"
-                  rank={"Junior"}
+                  title={getPlayerDetails({ homePlayer: false })}
                   pieces={[
                     ...capturedWhitePieces.map(
                       (piece) => pieceImages[piece.toLowerCase()]
@@ -551,11 +567,11 @@ const Chessboard = () => {
                   transform: "translateX(100%)",
                 }}
               >
+                {/* This is when the user is a black player so we need black player on bottom */}
                 <PlayerComp
                   isActive={chess.turn() == "b"}
                   alignDirection={"left"}
-                  title="Sanjay Meena"
-                  rank={"Master"}
+                  title={getPlayerDetails({ homePlayer: true })}
                   pieces={[
                     ...capturedBlackPieces.map(
                       (piece) => pieceImages[piece.toUpperCase()]

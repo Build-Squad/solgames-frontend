@@ -121,7 +121,10 @@ export default function Play({}: Props) {
             acceptorPubKey={gameData?.data?.acceptor?.publicKey}
           />
         ) : (
-          <Chessboard />
+          <Chessboard
+            creator={gameData?.data?.creator}
+            acceptor={gameData?.data?.acceptor}
+          />
         )}
       </Box>
     </Box>
