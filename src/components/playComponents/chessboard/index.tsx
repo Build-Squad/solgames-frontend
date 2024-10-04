@@ -127,6 +127,9 @@ const Chessboard = ({ creator, acceptor }: ChessboardProps) => {
   );
   const [promotionFrom, setPromotionFrom] = useState<ChessSquare | null>(null);
 
+  // game surrender state
+  const [hasSurrendered, setHasSurrendered] = useState(false);
+
   const { socket } = useSocket();
   const { showMessage } = useSnackbar();
   const { user } = useAuth();
@@ -137,6 +140,11 @@ const Chessboard = ({ creator, acceptor }: ChessboardProps) => {
     // In this case, the other person would've and we call socket to end the game.
     showMessage(TIMEOUT_ERRORS[type], "error", 10000);
     socket?.emit("inactiveUser", { gameId });
+  };
+
+  const handleSurrender = () => {
+    setHasSurrendered(true);
+    socket?.emit("surrenderCall", { gameId, userId: user?.id });
   };
 
   // This is for the 4 minute timer for each player starting once both the player's have joined.
@@ -411,6 +419,43 @@ const Chessboard = ({ creator, acceptor }: ChessboardProps) => {
           }
           return;
         }
+        if (message?.errorType == "GAME_SURRENDER") {
+          if (hasSurrendered) {
+            setLooserModalData({
+              state: true,
+              content: (
+                <>
+                  <p>
+                    It&rsquo;s so sad to hear that you&rsquo;ve surrendered but
+                    You&rsquo;ve lost the game{" "}
+                    {playerColor == "b" ? "white" : "black"} player.
+                  </p>
+                  <p>
+                    Clicked on surrender button you&rsquo;ve been defeated.
+                    Better luck next time.
+                  </p>
+                </>
+              ),
+            });
+          } else {
+            setWinnerModalData({
+              state: true,
+              content: (
+                <>
+                  <p>
+                    You&rsquo;ve won the game,{" "}
+                    {playerColor == "b" ? "black" : "white"} player!
+                  </p>
+                  <p>
+                    As the other player have surrendered. You&apos;ve been
+                    declared as a winnner
+                  </p>
+                </>
+              ),
+            });
+          }
+          return;
+        }
         if (message?.errorType == "GAME_DRAW") {
           setOpenDrawModal(true);
           return;
@@ -458,8 +503,6 @@ const Chessboard = ({ creator, acceptor }: ChessboardProps) => {
         : result
       : "";
   };
-
-  const handleSurrender = () => {};
 
   return (
     <>
