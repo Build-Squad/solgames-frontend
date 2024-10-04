@@ -1,27 +1,21 @@
-import {
-  TextField,
-  Button,
-  Slide,
-  Modal,
-  Box,
-  Typography,
-  Divider,
-} from "@mui/material";
-import { TransitionProps } from "@mui/material/transitions";
-import { useRouter } from "next/navigation";
-import React, { ChangeEvent, forwardRef, useState } from "react";
+import { Box, Button, Divider, Modal, Typography } from "@mui/material";
+import React from "react";
 
-export default function JoinGameModal({ handleClose }) {
-  const router = useRouter();
-  const [inviteCode, setInviteCode] = useState("");
+type Props = {
+  open: boolean;
+  onClose: () => void;
+  handleSurrender: () => void;
+};
 
-  const joinGame = () => {
-    router.push(`/join-game?joiningCode=${inviteCode}`);
+export default function index({ onClose, open, handleSurrender }: Props) {
+  const handleSurrenderClick = () => {
+    handleSurrender();
+    onClose();
   };
   return (
     <Modal
-      open={true}
-      onClose={handleClose}
+      open={open}
+      onClose={onClose}
       sx={{
         backdropFilter: "blur(10px)",
         bgcolor: "rgba(0, 0, 0, 0.7)",
@@ -48,41 +42,22 @@ export default function JoinGameModal({ handleClose }) {
           component="h2"
           sx={{ mb: 2, color: "#ffffff", textAlign: "center" }}
         >
-          Join a Game Using an Invite Code
+          Are You Sure You Want to Surrender?
         </Typography>
         <Typography
           variant="body1"
           sx={{ mb: 2, color: "#b0b0b0", textAlign: "center" }}
         >
-          To join a game and participate in the{" "}
-          <b style={{ color: "#fff" }}>
-            Chessmate - A Web3 betting chess game on Solana
-          </b>
-          , please enter the invite code below. Bet against your friend and win
-          crypto!
+          By surrendering, you will{" "}
+          <b style={{ color: "#fff" }}> lose the current game</b>, and you will{" "}
+          <b style={{ color: "#fff" }}>lose the bet amount.</b> Are you sure you
+          want to proceed with surrendering?
         </Typography>
         <Divider sx={{ my: 2, bgcolor: "#333333" }} />{" "}
         {/* Divider to separate content */}
-        <TextField
-          label="Invite Code"
-          variant="outlined"
-          fullWidth
-          value={inviteCode}
-          onChange={(e) => setInviteCode(e.target.value)}
-          sx={{
-            mb: 2,
-            "& .MuiOutlinedInput-root": {
-              bgcolor: "#333333",
-              color: "#ffffff",
-            },
-            "& .MuiFormLabel-root": {
-              color: "#b0b0b0",
-            },
-          }}
-        />
         <Button
           variant="contained"
-          onClick={joinGame}
+          onClick={handleSurrenderClick}
           fullWidth
           sx={{
             fontWeight: "700",
@@ -91,9 +66,26 @@ export default function JoinGameModal({ handleClose }) {
             "&:hover": {
               backgroundColor: "#E55A00",
             },
+            mb: 2,
           }}
         >
-          Join Game
+          Yes, Surrender
+        </Button>
+        <Button
+          variant="outlined"
+          onClick={onClose}
+          fullWidth
+          sx={{
+            fontWeight: "700",
+            borderColor: "#FF5C00",
+            color: "#FF5C00",
+            "&:hover": {
+              backgroundColor: "#333333",
+              borderColor: "#FF5C00",
+            },
+          }}
+        >
+          No, Keep Playing
         </Button>
         <Box sx={{ mt: 2, textAlign: "center" }}>
           <Typography variant="body2" sx={{ color: "#b0b0b0" }}>

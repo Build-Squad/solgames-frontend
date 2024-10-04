@@ -117,7 +117,7 @@ const GameStartNotificationComponent: React.FC = () => {
           }
         }}
         sx={{
-          maxWidth: "60vw",
+          maxWidth: "30vw",
           "& .MuiSnackbarContent-root": {
             backgroundColor: "#333",
             color: "#fff",

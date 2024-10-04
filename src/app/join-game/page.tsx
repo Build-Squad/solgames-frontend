@@ -27,13 +27,10 @@ export default function JoinGame({}: Props) {
   // custom context hooks
   const { user } = useAuth();
   const { showMessage } = useSnackbar();
-  const { showLoader, hideLoader } = useLoader();
 
-  const {
-    data: gameData,
-    refetch: refetchGameData,
-    isLoading,
-  } = useGetGameWithInviteCode(joiningCode);
+  const { data: gameData, isLoading } = useGetGameWithInviteCode(joiningCode);
+
+  const [isloadingData, setIsloadingData] = useState(false);
 
   const {
     depositAcceptGameResponse,
@@ -63,7 +60,10 @@ export default function JoinGame({}: Props) {
         "The game is completed or another player has already joined the game!",
         "error"
       );
-      router.push("/");
+      setIsloadingData(true);
+      setTimeout(() => {
+        router.push("/");
+      }, 1500);
     } else if (!user?.id) {
     } else {
       initializeAcceptGame();
@@ -78,6 +78,7 @@ export default function JoinGame({}: Props) {
       });
       if (!res.success) {
         showMessage(res.message, "error");
+        setIsloadingData(true);
       }
     } catch (e) {
       showMessage("Something went wrong!", "error");
@@ -85,30 +86,35 @@ export default function JoinGame({}: Props) {
   };
 
   if (!gameData?.success && !isLoading) {
-    return <NoDataFound onRetry={refetchGameData} />;
+    setTimeout(() => {
+      router.push("/");
+    }, 1500);
   }
 
   return (
     <>
-      {(isLoading || isDepositAcceptGameLoading) && (
+      {isLoading || isDepositAcceptGameLoading || isloadingData ? (
         <Spinner spinnerSx={{ color: "white", font: "20px" }} />
+      ) : (
+        <>
+          {user?.id && !openConnectModal ? (
+            <SignTransactionModal
+              open={true}
+              handleClose={() => {}}
+              type={"ACCEPT"}
+              betAmount={gameData?.data?.betAmount}
+              inviteCode={joiningCode}
+              escrowData={depositAcceptGameResponse?.data}
+            />
+          ) : null}
+          <ConnectModal
+            open={openConnectModal}
+            onClose={() => {
+              setOpenConnectModal(false);
+            }}
+          />
+        </>
       )}
-      {user?.id && !openConnectModal ? (
-        <SignTransactionModal
-          open={true}
-          handleClose={() => {}}
-          type={"ACCEPT"}
-          betAmount={gameData?.data?.betAmount}
-          inviteCode={joiningCode}
-          escrowData={depositAcceptGameResponse?.data}
-        />
-      ) : null}
-      <ConnectModal
-        open={openConnectModal}
-        onClose={() => {
-          setOpenConnectModal(false);
-        }}
-      />
     </>
   );
 }

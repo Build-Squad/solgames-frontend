@@ -140,7 +140,7 @@ const JoinGameNotificationComponent: React.FC = () => {
           }
         }}
         sx={{
-          minWidth: "50vh",
+          maxWidth: "35vw",
           "& .MuiSnackbarContent-root": {
             backgroundColor: "#f57c00",
             color: "#fff",
@@ -156,6 +156,10 @@ const JoinGameNotificationComponent: React.FC = () => {
             "& .MuiAlert-action": {
               color: "#fff",
               minWidth: "fit-content",
+            },
+            ".MuiSvgIcon-root": {
+              color: "white",
+              marginTop: "2px",
             },
           }}
           action={

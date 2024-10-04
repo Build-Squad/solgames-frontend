@@ -28,6 +28,7 @@ import MoveWarningSnackbar, {
 } from "../moveWarningSnackbar";
 import LooserModal from "@/components/modals/looserModal";
 import { ChessboardProps } from "./interface";
+import SurrenderBox from "../SurrenderBox";
 
 const PLAYER_TURN_TIME = 240;
 
@@ -458,13 +459,11 @@ const Chessboard = ({ creator, acceptor }: ChessboardProps) => {
       : "";
   };
 
+  const handleSurrender = () => {};
+
   return (
     <>
-      <Box
-        sx={{ backgroundColor: "white", textAlign: "center", fontSize: "20px" }}
-      >
-        Ideal count - {timeoutCount}/3
-      </Box>
+      <SurrenderBox onSurrender={handleSurrender} timeoutCount={timeoutCount} />
       <Box
         sx={{
           display: "flex",
