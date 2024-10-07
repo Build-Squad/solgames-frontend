@@ -142,9 +142,14 @@ const Chessboard = ({ creator, acceptor }: ChessboardProps) => {
     socket?.emit("inactiveUser", { gameId });
   };
 
+  useEffect(() => {
+    if (hasSurrendered) {
+      socket?.emit("surrenderCall", { gameId, userId: user?.id });
+    }
+  }, [hasSurrendered, user?.id, gameId, socket]);
+
   const handleSurrender = () => {
     setHasSurrendered(true);
-    socket?.emit("surrenderCall", { gameId, userId: user?.id });
   };
 
   // This is for the 4 minute timer for each player starting once both the player's have joined.
@@ -475,7 +480,15 @@ const Chessboard = ({ creator, acceptor }: ChessboardProps) => {
         }
       });
     }
-  }, [socket, updateBoard, handleShakeScreen, playerColor]);
+  }, [
+    socket,
+    updateBoard,
+    handleShakeScreen,
+    playerColor,
+    hasSurrendered,
+    activePlayer,
+    user?.id,
+  ]);
 
   // Turn Warning logic
   const handleCloseSnackbar = () => {
