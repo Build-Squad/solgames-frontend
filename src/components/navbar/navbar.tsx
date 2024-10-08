@@ -23,6 +23,9 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { useSnackbar } from "@/context/snackbarContext";
 import { Avatar, Menu, MenuItem } from "@mui/material";
 import { getRandomColor } from "@/utils/helper";
+import OGG_Logo from "../../assets/OG_Logo.png";
+import Image from "next/image";
+import { ContentCopy } from "@mui/icons-material";
 
 const drawerWidth = 240;
 const navLoggedInItems = [
@@ -132,6 +135,12 @@ const DrawerAppBar = () => {
     []
   );
 
+  const handleCopyCode = (e) => {
+    e.stopPropagation();
+    showMessage("Public Key copied to clipboard", "success");
+    navigator.clipboard.writeText(user?.publicKey);
+  };
+
   return (
     <Box sx={{}}>
       <CssBaseline />
@@ -155,9 +164,7 @@ const DrawerAppBar = () => {
           >
             <MenuIcon />
           </IconButton>
-          <Typography
-            variant="h6"
-            component="div"
+          <Box
             sx={{
               flexGrow: 1,
               display: { xs: "none", sm: "block" },
@@ -167,8 +174,14 @@ const DrawerAppBar = () => {
               router.push("/");
             }}
           >
-            CHESSMATE
-          </Typography>
+            <Image
+              src={OGG_Logo}
+              alt="Logo image"
+              height={"35"}
+              width={"150"}
+              style={{ marginTop: "8px" }}
+            />
+          </Box>
           <Box sx={{ display: "flex", columnGap: "8px" }}>
             {!!user?.id ? (
               <>
@@ -206,7 +219,9 @@ const DrawerAppBar = () => {
                     },
                   }}
                 >
-                  <MenuItem>
+                  <MenuItem
+                    sx={{ display: "flex", justifyContent: "space-between", alignItems:"center" }}
+                  >
                     <Typography
                       fontWeight={"bold"}
                       sx={{ wordBreak: "break-all" }}
@@ -218,6 +233,10 @@ const DrawerAppBar = () => {
                           )}.......${user?.publicKey.slice(-4)}`
                         : null}
                     </Typography>
+                    <ContentCopy
+                      onClick={handleCopyCode}
+                      style={{ cursor: "pointer", fontSize: "12px" }}
+                    />
                   </MenuItem>
                   <MenuItem
                     onClick={() => {

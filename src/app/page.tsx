@@ -80,8 +80,7 @@ export default function Home() {
             lineHeight: "1.6rem",
           }}
         >
-          World’s No. #1 decentralized chess game to stake crypto to play chess
-          with friends and the winner takes all.
+          Chess with tokens
         </Typography>
         {!!user?.id ? (
           <>

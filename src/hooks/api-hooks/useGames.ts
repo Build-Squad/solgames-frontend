@@ -5,7 +5,7 @@ import { useCallback, useState } from "react";
 export const useGetAllGames = (id: string) => {
   const [currentId, setCurrentId] = useState<string>(id);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, refetch } = useQuery({
     queryKey: [`all-games-with-id-${currentId}`],
     queryFn: () => GameServices.getGamesWithId(currentId),
     enabled: !!currentId,
@@ -23,6 +23,7 @@ export const useGetAllGames = (id: string) => {
     data,
     isLoading,
     updatedRefetch,
+    refetch,
   };
 };
 

@@ -54,6 +54,7 @@ const MyGames = () => {
     data: userGames,
     updatedRefetch,
     isLoading,
+    refetch
   } = useGetAllGames(user?.id);
   const [selectedGame, setSelectedGame] = useState(null);
   const [tabValue, setTabValue] = useState(0);
@@ -245,6 +246,7 @@ const MyGames = () => {
                       winnerId={params?.row?.winnerId}
                       gameStatus={params?.row?.gameStatus}
                       withdrawals={params?.row?.withdrawals ?? []}
+                      refetch={refetch}
                     />
                   );
                 },

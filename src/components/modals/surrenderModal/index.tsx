@@ -50,8 +50,7 @@ export default function index({ onClose, open, handleSurrender }: Props) {
         >
           By surrendering, you will{" "}
           <b style={{ color: "#fff" }}> lose the current game</b>, and you will{" "}
-          <b style={{ color: "#fff" }}>lose the bet amount.</b> Are you sure you
-          want to proceed with surrendering?
+          <b style={{ color: "#fff" }}>lose the bet amount.</b>
         </Typography>
         <Divider sx={{ my: 2, bgcolor: "#333333" }} />{" "}
         {/* Divider to separate content */}
