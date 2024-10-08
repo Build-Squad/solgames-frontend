@@ -433,7 +433,7 @@ const Chessboard = ({ creator, acceptor }: ChessboardProps) => {
                   <p>
                     It&rsquo;s so sad to hear that you&rsquo;ve surrendered but
                     You&rsquo;ve lost the game{" "}
-                    {playerColor == "b" ? "white" : "black"} player.
+                    {playerColor == "b" ? "black" : "white"} player.
                   </p>
                   <p>
                     Clicked on surrender button you&rsquo;ve been defeated.

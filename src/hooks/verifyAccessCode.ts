@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useAuth } from "@/context/authContext";
 import { usePathname, useRouter } from "next/navigation";
 import { useVerifyAccessCode } from "./api-hooks/useAccessCode";
+import { useSnackbar } from "@/context/snackbarContext";
 
 const homePageRoute = "/";
 const joinGameRoute = "/join-game";
@@ -18,6 +19,7 @@ const useVerifyAccessCodeHook = ({
   const { user, setUser } = useAuth();
 
   const { verifyEscrowMutateAsync } = useVerifyAccessCode();
+  const { showMessage } = useSnackbar();
 
   useEffect(() => {
     // Case 1: User is not logged in
@@ -47,12 +49,23 @@ const useVerifyAccessCodeHook = ({
 
   const handleSubmitAccessCodeVerification = async (code: string) => {
     // verify the access code, if valid, fetch user details and store in the useAuth login method
-    const verifyRes = await verifyEscrowMutateAsync({ code, userId: user?.id });
-    if (verifyRes?.success) {
-      setUser((prevUser) => ({
-        ...prevUser,
-        accessCode: code,
-      }));
+    try {
+      const verifyRes = await verifyEscrowMutateAsync({
+        code,
+        userId: user?.id,
+      });
+      if (verifyRes?.success) {
+        setUser((prevUser) => ({
+          ...prevUser,
+          accessCode: code,
+        }));
+        showMessage(verifyRes?.message);
+      } else {
+        showMessage(verifyRes?.message, "error");
+      }
+    } catch (e) {
+      console.error(e);
+      showMessage("Something went wrong", "error");
     }
   };
 

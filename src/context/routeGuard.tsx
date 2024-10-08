@@ -1,9 +1,6 @@
 "use client";
-import { usePathname, useRouter } from "next/navigation";
 import React, { useState } from "react";
-import { useAuth } from "./authContext";
 import AccessCodeModal from "@/components/modals/accessCodeModal";
-import { useVerifyAccessCode } from "@/hooks/api-hooks/useAccessCode";
 import useVerifySolanaWallet from "@/hooks/verifySolanaWallet";
 import useVerifyAccessCodeHook from "@/hooks/verifyAccessCode";
 
