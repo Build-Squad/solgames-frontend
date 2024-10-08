@@ -19,26 +19,39 @@ export default function Play({}: Props) {
   const { user } = useAuth();
   const { socket } = useSocket();
   const [isInstructionModalOpen, setIsInstructionModalOpen] = useState(true);
+  const [isStale, setIsStale] = useState(true);
 
   const handleCloseModal = () => setIsInstructionModalOpen(false);
 
   const inviteCode = searchParams.get("inviteCode");
 
-  const { data: gameData, isLoading } = useGetGameWithInviteCode(inviteCode);
+  const {
+    data: gameData,
+    isLoading,
+    isFetching,
+  } = useGetGameWithInviteCode(inviteCode);
   const { showMessage } = useSnackbar();
+
+  // Wait for fresh data if it's still fetching
+  useEffect(() => {
+    if (gameData?.data && !isFetching) {
+      setIsStale(false);
+    }
+  }, [gameData, isFetching]);
 
   useEffect(() => {
     if (
       socket &&
       gameData?.success &&
       gameData?.data?.gameStatus == STATUS_COLORS.InProgress.value &&
-      !isInstructionModalOpen
+      !isInstructionModalOpen &&
+      !isStale
     ) {
       socket.emit("joinGame", { userId: user?.id, gameCode: inviteCode });
     }
   }, [user, inviteCode, gameData, socket, isInstructionModalOpen]);
 
-  if (!isLoading && !!gameData) {
+  if (!isLoading && !!gameData && !isStale) {
     let hasError = false;
 
     // The user is not logged in and tried to visit the join game page.
@@ -70,7 +83,7 @@ export default function Play({}: Props) {
       showMessage("The game has not started or is finished", "error");
       setTimeout(() => {
         router.push("/my-games");
-      }, 3000);
+      }, 2000);
     }
     if (hasError) {
       return (
@@ -108,7 +121,10 @@ export default function Play({}: Props) {
             acceptorPubKey={gameData?.data?.acceptor?.publicKey}
           />
         ) : (
-          <Chessboard />
+          <Chessboard
+            creator={gameData?.data?.creator}
+            acceptor={gameData?.data?.acceptor}
+          />
         )}
       </Box>
     </Box>

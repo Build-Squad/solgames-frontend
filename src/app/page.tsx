@@ -25,7 +25,7 @@ export default function Home() {
 
   const handleClose = () => setJoinGameOpen(false);
   const createGame = () => {
-    if (!user?.accessCode?.id) {
+    if (!user?.accessCode) {
       showMessage("You need an access code before creating a game", "error");
       router.push("/my-games");
       return;
@@ -80,8 +80,7 @@ export default function Home() {
             lineHeight: "1.6rem",
           }}
         >
-          World’s No. #1 decentralized chess game to stake crypto to play chess
-          with friends and the winner takes all.
+          Chess with tokens
         </Typography>
         {!!user?.id ? (
           <>

@@ -1,3 +1,4 @@
+'use client'
 import React from "react";
 import Snackbar from "@mui/material/Snackbar";
 import MuiAlert from "@mui/material/Alert";
@@ -46,7 +47,12 @@ const JoinGameNotificationComponent: React.FC = () => {
 
     userGames?.forEach((game: Game) => {
       // Check if the game is not in progress
-      if (game.gameStatus !== STATUS_COLORS.InProgress.value) {
+      if (
+        ![
+          STATUS_COLORS.InProgress.value,
+          STATUS_COLORS.Accepted.value,
+        ].includes(game.gameStatus)
+      ) {
         setGameInQueue(
           (prevQueue) =>
             prevQueue?.filter((queuedGame) => queuedGame.id !== game.id) || []
@@ -108,7 +114,7 @@ const JoinGameNotificationComponent: React.FC = () => {
 
   const handleRedirect = () => {
     const gameData = gameInQueue?.[0];
-    router.push(`play?inviteCode=${gameData.inviteCode}`);
+    router.push(`play?inviteCode=${gameData?.inviteCode}`);
   };
 
   const formatTimeLeft = (seconds: number | null) => {
@@ -135,7 +141,7 @@ const JoinGameNotificationComponent: React.FC = () => {
           }
         }}
         sx={{
-          minWidth: "50vh",
+          width: "35vw",
           "& .MuiSnackbarContent-root": {
             backgroundColor: "#f57c00",
             color: "#fff",
@@ -151,6 +157,10 @@ const JoinGameNotificationComponent: React.FC = () => {
             "& .MuiAlert-action": {
               color: "#fff",
               minWidth: "fit-content",
+            },
+            ".MuiSvgIcon-root": {
+              color: "white",
+              marginTop: "2px",
             },
           }}
           action={

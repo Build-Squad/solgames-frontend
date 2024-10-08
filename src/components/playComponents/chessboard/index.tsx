@@ -27,6 +27,8 @@ import MoveWarningSnackbar, {
   WARNING_TIME_IN_SECONDS,
 } from "../moveWarningSnackbar";
 import LooserModal from "@/components/modals/looserModal";
+import { ChessboardProps } from "./interface";
+import SurrenderBox from "../SurrenderBox";
 
 const PLAYER_TURN_TIME = 240;
 
@@ -82,7 +84,7 @@ const formatTime = (seconds: number) => {
     .padStart(2, "0")}`;
 };
 
-const Chessboard = () => {
+const Chessboard = ({ creator, acceptor }: ChessboardProps) => {
   const router = useRouter();
 
   // State related to chessboard
@@ -125,6 +127,9 @@ const Chessboard = () => {
   );
   const [promotionFrom, setPromotionFrom] = useState<ChessSquare | null>(null);
 
+  // game surrender state
+  const [hasSurrendered, setHasSurrendered] = useState(false);
+
   const { socket } = useSocket();
   const { showMessage } = useSnackbar();
   const { user } = useAuth();
@@ -135,6 +140,16 @@ const Chessboard = () => {
     // In this case, the other person would've and we call socket to end the game.
     showMessage(TIMEOUT_ERRORS[type], "error", 10000);
     socket?.emit("inactiveUser", { gameId });
+  };
+
+  useEffect(() => {
+    if (hasSurrendered) {
+      socket?.emit("surrenderCall", { gameId, userId: user?.id });
+    }
+  }, [hasSurrendered, user?.id, gameId, socket]);
+
+  const handleSurrender = () => {
+    setHasSurrendered(true);
   };
 
   // This is for the 4 minute timer for each player starting once both the player's have joined.
@@ -409,6 +424,43 @@ const Chessboard = () => {
           }
           return;
         }
+        if (message?.errorType == "GAME_SURRENDER") {
+          if (hasSurrendered) {
+            setLooserModalData({
+              state: true,
+              content: (
+                <>
+                  <p>
+                    It&rsquo;s so sad to hear that you&rsquo;ve surrendered but
+                    You&rsquo;ve lost the game{" "}
+                    {playerColor == "b" ? "black" : "white"} player.
+                  </p>
+                  <p>
+                    Clicked on surrender button you&rsquo;ve been defeated.
+                    Better luck next time.
+                  </p>
+                </>
+              ),
+            });
+          } else {
+            setWinnerModalData({
+              state: true,
+              content: (
+                <>
+                  <p>
+                    You&rsquo;ve won the game,{" "}
+                    {playerColor == "b" ? "black" : "white"} player!
+                  </p>
+                  <p>
+                    As the other player have surrendered. You&apos;ve been
+                    declared as a winnner
+                  </p>
+                </>
+              ),
+            });
+          }
+          return;
+        }
         if (message?.errorType == "GAME_DRAW") {
           setOpenDrawModal(true);
           return;
@@ -428,7 +480,15 @@ const Chessboard = () => {
         }
       });
     }
-  }, [socket, updateBoard, handleShakeScreen, playerColor]);
+  }, [
+    socket,
+    updateBoard,
+    handleShakeScreen,
+    playerColor,
+    hasSurrendered,
+    activePlayer,
+    user?.id,
+  ]);
 
   // Turn Warning logic
   const handleCloseSnackbar = () => {
@@ -440,13 +500,26 @@ const Chessboard = () => {
     handleInactivity("INACTIVITY_EXHAUST");
   };
 
+  // If current play is white that means the user is a white player
+  const getPlayerDetails = ({ homePlayer }: { homePlayer: boolean }) => {
+    let result = "";
+    if (homePlayer) {
+      result = user?.publicKey;
+    } else {
+      if (user?.publicKey == acceptor?.publicKey) {
+        result = creator?.publicKey;
+      } else result = acceptor?.publicKey;
+    }
+    return result
+      ? result.length > 6
+        ? `${result.slice(0, 6)}...`
+        : result
+      : "";
+  };
+
   return (
     <>
-      <Box
-        sx={{ backgroundColor: "white", textAlign: "center", fontSize: "20px" }}
-      >
-        Ideal count - {timeoutCount}/3
-      </Box>
+      <SurrenderBox onSurrender={handleSurrender} timeoutCount={timeoutCount} />
       <Box
         sx={{
           display: "flex",
@@ -454,8 +527,6 @@ const Chessboard = () => {
         }}
       >
         <Box className={styles.boardContainer}>
-          {/* The player box */}
-
           {/* The player box */}
           {isWhitePlayer ? (
             <>
@@ -467,11 +538,11 @@ const Chessboard = () => {
                   transform: "translateX(-100%)",
                 }}
               >
+                {/* This is when the user is a white player so we need black player on the top left */}
                 <PlayerComp
                   isActive={chess.turn() == "b"}
                   alignDirection={"right"}
-                  title="Sanjay Meena"
-                  rank={"Master"}
+                  title={getPlayerDetails({ homePlayer: false })}
                   pieces={[
                     ...capturedBlackPieces.map(
                       (piece) => pieceImages[piece.toUpperCase()]
@@ -497,11 +568,11 @@ const Chessboard = () => {
                   transform: "translateX(100%)",
                 }}
               >
+                {/* This is when the user is a white player so we need white player on bottom */}
                 <PlayerComp
                   isActive={chess.turn() == "w"}
                   alignDirection={"left"}
-                  title="Parikshit Singh"
-                  rank={"Junior"}
+                  title={getPlayerDetails({ homePlayer: true })}
                   pieces={[
                     ...capturedWhitePieces.map(
                       (piece) => pieceImages[piece.toLowerCase()]
@@ -530,11 +601,11 @@ const Chessboard = () => {
                   transform: "translateX(-100%)",
                 }}
               >
+                {/* This is when the user is a black player so we need white player on the top left */}
                 <PlayerComp
                   isActive={chess.turn() == "w"}
                   alignDirection={"right"}
-                  title="Parikshit Singh"
-                  rank={"Junior"}
+                  title={getPlayerDetails({ homePlayer: false })}
                   pieces={[
                     ...capturedWhitePieces.map(
                       (piece) => pieceImages[piece.toLowerCase()]
@@ -551,11 +622,11 @@ const Chessboard = () => {
                   transform: "translateX(100%)",
                 }}
               >
+                {/* This is when the user is a black player so we need black player on bottom */}
                 <PlayerComp
                   isActive={chess.turn() == "b"}
                   alignDirection={"left"}
-                  title="Sanjay Meena"
-                  rank={"Master"}
+                  title={getPlayerDetails({ homePlayer: true })}
                   pieces={[
                     ...capturedBlackPieces.map(
                       (piece) => pieceImages[piece.toUpperCase()]
@@ -598,14 +669,16 @@ const Chessboard = () => {
                     className={styles.piece}
                   />
                 )}
-                {possibleMoves.includes(indexToSquare(index)) && (
+
+                {/* Enable this when doing begineer's mode */}
+                {/* {possibleMoves.includes(indexToSquare(index)) && (
                   <Box
                     className={`${styles.possibleMove} ${
                       doesPossibleMoveCutsPiece(index) &&
                       styles.possibleMoveCanCut
                     }`}
                   />
-                )}
+                )} */}
               </Box>
             ))}
           </Box>

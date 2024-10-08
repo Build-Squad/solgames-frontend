@@ -32,8 +32,8 @@ const AccessCodeModal: React.FC<AccessCodeModalProps> = ({
       open={open}
       onClose={onClose}
       sx={{
-        backdropFilter: "blur(10px)", // Apply blur effect to the background
-        bgcolor: "rgba(0, 0, 0, 0.7)", // Dark semi-transparent overlay
+        backdropFilter: "blur(10px)",
+        bgcolor: "rgba(0, 0, 0, 0.7)",
       }}
     >
       <Box
@@ -42,12 +42,12 @@ const AccessCodeModal: React.FC<AccessCodeModalProps> = ({
           top: "50%",
           left: "50%",
           transform: "translate(-50%, -50%)",
-          width: 600, // Increased width
-          bgcolor: "#121212", // Dark background for the modal content
+          width: 600,
+          bgcolor: "#121212",
           borderRadius: 2,
           boxShadow: 24,
           p: 4,
-          color: "#ffffff", // White text color
+          color: "#ffffff",
           display: "flex",
           flexDirection: "column",
         }}
@@ -55,13 +55,13 @@ const AccessCodeModal: React.FC<AccessCodeModalProps> = ({
         <Typography
           variant="h5"
           component="h2"
-          sx={{ mb: 2, color: "#ffffff", textAlign: "center" }} // White text color and center alignment
+          sx={{ mb: 2, color: "#ffffff", textAlign: "center" }}
         >
           Welcome to the Chess Betting Platform
         </Typography>
         <Typography
           variant="body1"
-          sx={{ mb: 2, color: "#b0b0b0", textAlign: "center" }} // Light gray text color
+          sx={{ mb: 2, color: "#b0b0b0", textAlign: "center" }}
         >
           To access the{" "}
           <b style={{ color: "#fff" }}>

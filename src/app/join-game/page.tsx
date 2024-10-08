@@ -1,4 +1,5 @@
 "use client";
+import Spinner from "@/components/loadingComponent/spinner";
 import ConnectModal from "@/components/modals/connectModal";
 import SignTransactionModal from "@/components/modals/SignTransactionModal";
 import NoDataFound from "@/components/noDataFound";
@@ -26,10 +27,10 @@ export default function JoinGame({}: Props) {
   // custom context hooks
   const { user } = useAuth();
   const { showMessage } = useSnackbar();
-  const { showLoader, hideLoader } = useLoader();
 
-  const { data: gameData, refetch: refetchGameData } =
-    useGetGameWithInviteCode(joiningCode);
+  const { data: gameData, isLoading } = useGetGameWithInviteCode(joiningCode);
+
+  const [isloadingData, setIsloadingData] = useState(false);
 
   const {
     depositAcceptGameResponse,
@@ -37,13 +38,9 @@ export default function JoinGame({}: Props) {
     isDepositAcceptGameLoading,
   } = useDepositAcceptTransaction();
 
-  useEffect(() => {
-    if (isDepositAcceptGameLoading) {
-      showLoader();
-    } else {
-      hideLoader();
-    }
-  }, [isDepositAcceptGameLoading]);
+  if (!joiningCode) {
+    router.push("/");
+  }
 
   useEffect(() => {
     if (!user?.id) {
@@ -63,9 +60,10 @@ export default function JoinGame({}: Props) {
         "The game is completed or another player has already joined the game!",
         "error"
       );
+      setIsloadingData(true);
       setTimeout(() => {
-        router.back();
-      }, 3000);
+        router.push("/");
+      }, 1500);
     } else if (!user?.id) {
     } else {
       initializeAcceptGame();
@@ -80,38 +78,43 @@ export default function JoinGame({}: Props) {
       });
       if (!res.success) {
         showMessage(res.message, "error");
+        setIsloadingData(true);
       }
     } catch (e) {
       showMessage("Something went wrong!", "error");
     }
   };
 
-  if (!gameData?.success) {
-    return <NoDataFound onRetry={refetchGameData} />;
-  }
-
-  if (!joiningCode) {
-    return <NoDataFound message="No joining code found!" />;
+  if (!gameData?.success && !isLoading) {
+    setTimeout(() => {
+      router.push("/");
+    }, 1500);
   }
 
   return (
     <>
-      {user?.id && !openConnectModal ? (
-        <SignTransactionModal
-          open={true}
-          handleClose={() => {}}
-          type={"ACCEPT"}
-          betAmount={gameData.data.betAmount}
-          inviteCode={joiningCode}
-          escrowData={depositAcceptGameResponse?.data}
-        />
-      ) : null}
-      <ConnectModal
-        open={openConnectModal}
-        onClose={() => {
-          setOpenConnectModal(false);
-        }}
-      />
+      {isLoading || isDepositAcceptGameLoading || isloadingData ? (
+        <Spinner spinnerSx={{ color: "white", font: "20px" }} />
+      ) : (
+        <>
+          {user?.id && !openConnectModal ? (
+            <SignTransactionModal
+              open={true}
+              handleClose={() => {}}
+              type={"ACCEPT"}
+              betAmount={gameData?.data?.betAmount}
+              inviteCode={joiningCode}
+              escrowData={depositAcceptGameResponse?.data}
+            />
+          ) : null}
+          <ConnectModal
+            open={openConnectModal}
+            onClose={() => {
+              setOpenConnectModal(false);
+            }}
+          />
+        </>
+      )}
     </>
   );
 }

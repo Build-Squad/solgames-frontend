@@ -1,4 +1,3 @@
-"use client";
 import { Inter } from "next/font/google";
 import Navbar from "../components/navbar/navbar";
 import "./globals.css";
@@ -12,7 +11,14 @@ import GameStartNotificationComponent from "@/components/gameStartNotifComp";
 import JoinGameNotificationComponent from "@/components/joinGameNotifComp";
 import SolanaWalletContextProvider from "@/context/solanaWalletContextProvider";
 import RouteGuard from "@/context/routeGuard";
+import type { Metadata } from "next";
+
 const inter = Inter({ subsets: ["latin"] });
+
+export const metadata: Metadata = {
+  title: "OG Games",
+  description: "...",
+};
 
 export default function RootLayout({
   children,

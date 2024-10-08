@@ -9,7 +9,7 @@ type TimerSnackbarProps = {
 };
 
 // Ideally 120 for 2 minutes
-export const WARNING_TIME_IN_SECONDS = 10;
+export const WARNING_TIME_IN_SECONDS = 120;
 
 const MoveWarningSnackbar: React.FC<TimerSnackbarProps> = ({
   open,

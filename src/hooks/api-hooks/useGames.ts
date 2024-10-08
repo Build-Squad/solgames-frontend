@@ -5,10 +5,11 @@ import { useCallback, useState } from "react";
 export const useGetAllGames = (id: string) => {
   const [currentId, setCurrentId] = useState<string>(id);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, refetch } = useQuery({
     queryKey: [`all-games-with-id-${currentId}`],
     queryFn: () => GameServices.getGamesWithId(currentId),
     enabled: !!currentId,
+    staleTime: 0,
   });
 
   const updatedRefetch = useCallback(
@@ -22,6 +23,7 @@ export const useGetAllGames = (id: string) => {
     data,
     isLoading,
     updatedRefetch,
+    refetch,
   };
 };
 
@@ -30,6 +32,7 @@ export const useGetGameWithInviteCode = (inviteCode: string) => {
     queryKey: [`game-detail-${inviteCode}`],
     queryFn: () => GameServices.getGameWithInviteCode(inviteCode),
     enabled: !!inviteCode,
+    staleTime: 0,
   });
 };
 

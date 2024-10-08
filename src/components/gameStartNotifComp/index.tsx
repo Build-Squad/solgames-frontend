@@ -1,3 +1,4 @@
+"use client";
 import React from "react";
 import Snackbar from "@mui/material/Snackbar";
 import MuiAlert from "@mui/material/Alert";
@@ -117,7 +118,7 @@ const GameStartNotificationComponent: React.FC = () => {
           }
         }}
         sx={{
-          maxWidth: "60vw",
+          width: "35vw",
           "& .MuiSnackbarContent-root": {
             backgroundColor: "#333",
             color: "#fff",

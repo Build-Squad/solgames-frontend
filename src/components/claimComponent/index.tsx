@@ -32,6 +32,7 @@ interface ClaimInterface {
     transactionId: string;
     user: User;
   }[];
+  refetch: any;
 }
 
 const ClaimsComponent = ({
@@ -39,6 +40,7 @@ const ClaimsComponent = ({
   gameStatus,
   inviteCode,
   withdrawals,
+  refetch,
 }: ClaimInterface) => {
   // Component states
   const [withdrawalType, setWithdrawalType] = useState<WithdrawalTypes>();
@@ -119,11 +121,10 @@ const ClaimsComponent = ({
             sx={{
               ...iconStyle,
               color: isDisabled() ? "#9E9E9E" : "#4CAF50",
-              backgroundColor: isDisabled() ? "#F5F5F5" : "transparent",
+              backgroundColor: "transparent",
               "&:hover": {
                 ...iconStyle["&:hover"],
                 color: isDisabled() ? "#9E9E9E" : "#388E3C",
-                backgroundColor: isDisabled() ? "#F5F5F5" : "transparent",
               },
             }}
             onClick={(e) => {
@@ -131,6 +132,7 @@ const ClaimsComponent = ({
                 handleOnClick(e, "WON");
               }
             }}
+            fontSize="large"
           />
         </Tooltip>
       )}
@@ -145,6 +147,7 @@ const ClaimsComponent = ({
                 transform: "scale(1.2)",
                 color: "#D32F2F",
               },
+              fontSize: "28px",
             }}
             onClick={(e) => {
               handleOnClick(e, "LOST");
@@ -163,6 +166,7 @@ const ClaimsComponent = ({
                 transform: "scale(1.2)",
                 color: "#FF8F00",
               },
+              fontSize: "28px",
             }}
             onClick={(e) => {
               handleOnClick(e, "PENDING");
@@ -183,12 +187,12 @@ const ClaimsComponent = ({
             sx={{
               ...iconStyle,
               color: isDisabled() ? "#9E9E9E" : "#E53935",
-              backgroundColor: isDisabled() ? "#F5F5F5" : "transparent",
+              backgroundColor: "transparent",
               "&:hover": {
                 ...iconStyle["&:hover"],
                 color: isDisabled() ? "#9E9E9E" : "#D32F2F",
-                backgroundColor: isDisabled() ? "#F5F5F5" : "transparent",
               },
+              fontSize: "28px",
             }}
             onClick={(e) => {
               if (!isDisabled()) {
@@ -209,12 +213,12 @@ const ClaimsComponent = ({
             sx={{
               ...iconStyle,
               color: isDisabled() ? "#9E9E9E" : "#42A5F5",
-              backgroundColor: isDisabled() ? "#F5F5F5" : "transparent",
+              backgroundColor: "transparent",
               "&:hover": {
                 ...iconStyle["&:hover"],
                 color: isDisabled() ? "#9E9E9E" : "#1E88E5",
-                backgroundColor: isDisabled() ? "#F5F5F5" : "transparent",
               },
+              fontSize: "28px",
             }}
             onClick={(e) => {
               if (!isDisabled()) {
@@ -229,6 +233,9 @@ const ClaimsComponent = ({
         <SignTransactionModal
           open={true}
           handleClose={() => {
+            setTimeout(() => {
+              refetch(user?.id);
+            }, 8000);
             setShowSignTransactionModal(false);
           }}
           type={"WITHDRAWAL"}
