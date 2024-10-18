@@ -1,23 +1,16 @@
 "use client";
 import { useAuth } from "@/context/authContext";
 import { useGetAllGames } from "@/hooks/api-hooks/useGames";
-import { Chip, Tabs, Tab, Tooltip, Box } from "@mui/material";
-import { DataGrid } from "@mui/x-data-grid";
+import { Chip, Tabs, Tab, Box, Typography } from "@mui/material";
+import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import React, { useEffect, useState } from "react";
 import GameDetailsModal from "@/components/modals/gameDetailsModal";
-import { CLAIM_ALERTS, STATUS_COLORS } from "@/utils/constants";
-import {
-  CheckCircle,
-  Cancel,
-  ContentCopy,
-  MonetizationOn,
-  HourglassEmpty,
-  EventBusy,
-  EmojiFlags,
-} from "@mui/icons-material";
+import { STATUS_COLORS } from "@/utils/constants";
+import { CheckCircle, Cancel, ContentCopy } from "@mui/icons-material";
 import { useSnackbar } from "@/context/snackbarContext";
-import { useWithdrawalTransaction } from "@/hooks/api-hooks/useEscrow";
 import ClaimsComponent from "@/components/claimComponent";
+import Image from "next/image";
+import No_data from "@/assets/No_data.svg";
 
 const renderIsGameAccepted = (params) => {
   return (
@@ -54,7 +47,7 @@ const MyGames = () => {
     data: userGames,
     updatedRefetch,
     isLoading,
-    refetch
+    refetch,
   } = useGetAllGames(user?.id);
   const [selectedGame, setSelectedGame] = useState(null);
   const [tabValue, setTabValue] = useState(0);
@@ -78,6 +71,105 @@ const MyGames = () => {
     tabValue === 0
       ? userGames?.filter((game) => game.creatorId === user?.id)
       : userGames?.filter((game) => game.acceptorId === user?.id);
+
+  const columns: GridColDef<any>[] = [
+    {
+      field: "id",
+      headerName: "ID",
+      flex: 1,
+    },
+    {
+      field: "token",
+      headerName: "Token",
+      flex: 1,
+      headerAlign: "center",
+      cellClassName: "center-align",
+    },
+    {
+      field: "betAmount",
+      headerName: "Bet Amount",
+      flex: 1,
+      headerAlign: "center",
+      cellClassName: "center-align",
+    },
+    {
+      field: "inviteCode",
+      headerName: "Invite Code",
+      flex: 1,
+      headerAlign: "center",
+      cellClassName: "center-align",
+      renderCell: (params) => {
+        const handleCopyCode = (e) => {
+          e.stopPropagation();
+          showMessage("Code copied to clipboard", "success");
+          navigator.clipboard.writeText(
+            `${process.env.NEXT_PUBLIC_FRONTEND}/join-game?joiningCode=${params.value}`
+          );
+        };
+        return (
+          <span
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              columnGap: "12px",
+            }}
+          >
+            {params.value}
+            <ContentCopy
+              onClick={handleCopyCode}
+              style={{ cursor: "pointer", fontSize: "12px" }}
+            />
+          </span>
+        );
+      },
+    },
+    {
+      field: "gameDateTime",
+      headerName: "Event Date Time",
+      flex: 1,
+      headerAlign: "center",
+      renderCell: (params) => {
+        const date = new Date(params.value);
+        return date.toLocaleString();
+      },
+      cellClassName: "center-align",
+    },
+    {
+      field: "isGameAccepted",
+      headerName: "Game Accepted",
+      flex: 1,
+      headerAlign: "center",
+      renderCell: renderIsGameAccepted,
+      cellClassName: "center-align",
+    },
+    {
+      field: "gameStatus",
+      headerName: "Status",
+      flex: 1,
+      headerAlign: "center",
+      renderCell: renderGameStatus,
+      cellClassName: "center-align",
+    },
+    {
+      field: "claims",
+      headerName: "Claims",
+      flex: 1,
+      headerAlign: "center",
+      renderCell: (params) => {
+        return (
+          <ClaimsComponent
+            inviteCode={params?.row?.inviteCode}
+            winnerId={params?.row?.winnerId}
+            gameStatus={params?.row?.gameStatus}
+            withdrawals={params?.row?.withdrawals ?? []}
+            refetch={refetch}
+          />
+        );
+      },
+      cellClassName: "center-align",
+    },
+  ];
 
   return (
     <>
@@ -155,109 +247,12 @@ const MyGames = () => {
         >
           <DataGrid
             rows={filteredGames ?? []}
-            columns={[
-              {
-                field: "id",
-                headerName: "ID",
-                flex: 1,
-              },
-              {
-                field: "token",
-                headerName: "Token",
-                flex: 1,
-                headerAlign: "center",
-                cellClassName: "center-align",
-              },
-              {
-                field: "betAmount",
-                headerName: "Bet Amount",
-                flex: 1,
-                headerAlign: "center",
-                cellClassName: "center-align",
-              },
-              {
-                field: "inviteCode",
-                headerName: "Invite Code",
-                flex: 1,
-                headerAlign: "center",
-                cellClassName: "center-align",
-                renderCell: (params) => {
-                  const handleCopyCode = (e) => {
-                    e.stopPropagation();
-                    showMessage("Code copied to clipboard", "success");
-                    navigator.clipboard.writeText(
-                      `${process.env.NEXT_PUBLIC_FRONTEND}/join-game?joiningCode=${params.value}`
-                    );
-                  };
-                  return (
-                    <span
-                      style={{
-                        display: "flex",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        columnGap: "12px",
-                      }}
-                    >
-                      {params.value}
-                      <ContentCopy
-                        onClick={handleCopyCode}
-                        style={{ cursor: "pointer", fontSize: "12px" }}
-                      />
-                    </span>
-                  );
-                },
-              },
-              {
-                field: "gameDateTime",
-                headerName: "Event Date Time",
-                flex: 1,
-                headerAlign: "center",
-                renderCell: (params) => {
-                  const date = new Date(params.value);
-                  return date.toLocaleString();
-                },
-                cellClassName: "center-align",
-              },
-              {
-                field: "isGameAccepted",
-                headerName: "Game Accepted",
-                flex: 1,
-                headerAlign: "center",
-                renderCell: renderIsGameAccepted,
-                cellClassName: "center-align",
-              },
-              {
-                field: "gameStatus",
-                headerName: "Status",
-                flex: 1,
-                headerAlign: "center",
-                renderCell: renderGameStatus,
-                cellClassName: "center-align",
-              },
-              {
-                field: "claims",
-                headerName: "Claims",
-                flex: 1,
-                headerAlign: "center",
-                renderCell: (params) => {
-                  return (
-                    <ClaimsComponent
-                      inviteCode={params?.row?.inviteCode}
-                      winnerId={params?.row?.winnerId}
-                      gameStatus={params?.row?.gameStatus}
-                      withdrawals={params?.row?.withdrawals ?? []}
-                      refetch={refetch}
-                    />
-                  );
-                },
-                cellClassName: "center-align",
-              },
-            ]}
+            columns={columns}
             initialState={{
               pagination: {
                 paginationModel: {
                   page: 0,
-                  pageSize: 10,
+                  pageSize: 8,
                 },
               },
             }}
@@ -269,13 +264,17 @@ const MyGames = () => {
                 textAlign: "center",
               },
             }}
-            pageSizeOptions={[5, 10]}
+            pageSizeOptions={[8, 16]}
             checkboxSelection
             disableRowSelectionOnClick
             disableColumnMenu
             density="comfortable"
             loading={isLoading}
             onRowClick={handleRowClick}
+            slots={{
+              
+              noRowsOverlay: NoDataOverlay,
+            }}
           />
         </Box>
       </Box>
@@ -290,3 +289,26 @@ const MyGames = () => {
 };
 
 export default MyGames;
+
+const NoDataOverlay = () => (
+  <div
+    style={{
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "center",
+      alignItems: "center",
+      height: "100%",
+    }}
+  >
+    <Image
+      src={No_data}
+      alt="No data"
+      height={100}
+      width={100}
+      style={{ height: "40%", width: "40%" }}
+    />
+    <Typography sx={{ fontWeight: "bold", fontSize: "32px" }}>
+      No Games found...
+    </Typography>
+  </div>
+);

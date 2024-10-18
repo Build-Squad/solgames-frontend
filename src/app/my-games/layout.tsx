@@ -9,7 +9,8 @@ export default function ProfileLayout({
   return (
     <Box
       sx={{
-        height: "100vh",
+        minHeight: "100vh",
+        height: "100%",
         backgroundColor: "#252525",
         backgroundImage: `url(${World_map.src})`,
         backgroundSize: "cover",
