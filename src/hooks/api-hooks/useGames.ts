@@ -19,8 +19,10 @@ export const useGetAllGames = (id: string) => {
     [id]
   );
 
+  const userGames = data?.data ?? [];
+
   return {
-    data,
+    data: userGames,
     isLoading,
     updatedRefetch,
     refetch,

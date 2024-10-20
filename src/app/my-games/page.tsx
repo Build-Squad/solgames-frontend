@@ -227,6 +227,7 @@ const MyGames = () => {
           width="100%"
           sx={{
             padding: "2% 5%",
+            ".MuiDataGrid-root": { minHeight: "60vh" },
             "& .MuiDataGrid-cell": {
               borderBottom: "none",
             },
@@ -272,7 +273,6 @@ const MyGames = () => {
             loading={isLoading}
             onRowClick={handleRowClick}
             slots={{
-              
               noRowsOverlay: NoDataOverlay,
             }}
           />
