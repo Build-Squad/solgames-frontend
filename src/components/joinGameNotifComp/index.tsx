@@ -112,9 +112,10 @@ const JoinGameNotificationComponent: React.FC = () => {
     setSnackbar({ ...snackbar, open: false });
   };
 
+  
+
   const handleRedirect = () => {
-    const gameData = gameInQueue?.[0];
-    router.push(`play?inviteCode=${gameData?.inviteCode}`);
+    router.push(`play?inviteCode=${snackbar?.game?.inviteCode}`);
   };
 
   const formatTimeLeft = (seconds: number | null) => {
