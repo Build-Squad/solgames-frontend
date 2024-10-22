@@ -29,6 +29,7 @@ import MoveWarningSnackbar, {
 import LooserModal from "@/components/modals/looserModal";
 import { ChessboardProps } from "./interface";
 import SurrenderBox from "../SurrenderBox";
+import WaitingComp from "../WaitingComp";
 
 const PLAYER_TURN_TIME = 240;
 
@@ -519,6 +520,9 @@ const Chessboard = ({ creator, acceptor }: ChessboardProps) => {
 
   return (
     <>
+      {/* Starting waiting component */}
+      <WaitingComp isGameStarted={gameStarted} />
+
       <SurrenderBox onSurrender={handleSurrender} timeoutCount={timeoutCount} />
       <Box
         sx={{
