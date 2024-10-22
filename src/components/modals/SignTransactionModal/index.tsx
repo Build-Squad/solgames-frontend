@@ -181,7 +181,9 @@ const SignTransactionModal = ({
         showMessage(res.message);
 
         // Here we need to recall the login so as to update the user in the useAuth
-        const connectedUser = await connectionMutateAsync({ publicKey });
+        const connectedUser = await connectionMutateAsync({
+          publicKey: user?.publicKey,
+        });
         if (connectedUser?.data?.id) {
           loginUser(connectedUser.data);
         }
