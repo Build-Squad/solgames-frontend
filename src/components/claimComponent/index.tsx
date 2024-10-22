@@ -175,7 +175,7 @@ const ClaimsComponent = ({
         </Tooltip>
       )}
       {/* Game is expired due to no acceptor before the game starts.*/}
-      {gameStatus === STATUS_COLORS.Expired.value && (
+      {gameStatus === STATUS_COLORS.Expired.value && !winnerId && (
         <Tooltip
           title={
             isDisabled()
